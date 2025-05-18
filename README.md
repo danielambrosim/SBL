@@ -14,41 +14,6 @@
 
 ---
 
-## 🌟 Destaques
-
-<div align="center">
-
-| ✅ Autenticação Simplificada | ✅ Sincronização em Tempo Real | ✅ Notificações Automáticas |
-|-----------------------------|-------------------------------|----------------------------|
-| ![Auth](https://via.placeholder.com/150x100/2CA5E0/FFFFFF?text=Login) | ![Sync](https://via.placeholder.com/150x100/43853D/FFFFFF?text=Sync) | ![Notify](https://via.placeholder.com/150x100/005C84/FFFFFF?text=Alert) |
-
-</div>
-
----
-
-## 🛠️ Stack Tecnológica
-
-<div align="center">
-
-| Categoria       | Tecnologias                                    |
-|-----------------|------------------------------------------------|
-| **Backend**     | Node.js • Express • Axios                      |
-| **Banco**       | MySQL • Sequelize                              |
-| **Integração**  | Telegram Bot API • Webhooks                    |
-| **Utilitários** | Dotenv • Nodemon • Moment.js                   |
-
-</div>
-
----
-
-## 🚀 Começando
-
-### **Pré-requisitos**
-- Node.js 18+
-- MySQL 8+
-- Conta no Telegram
-
-### **Instalação**
 ## 🚀 Clone o projeto
 
 ```bash
@@ -61,16 +26,12 @@ npm install
 # Configure o ambiente
 cp .env.example .env
 nano .env  # Edite com suas credenciais
-
----
-### **Instalação**
-## ▶️ Execução
-
+▶️ Execução
+bash
+Copiar
+Editar
 npm start      # Modo produção
 npm run dev    # Modo desenvolvimento (hot-reload)
-
-
-
 🎯 Funcionalidades Principais
 🔐 Sistema de Autenticação Segura
 
@@ -120,3 +81,5 @@ Entre em contato para dúvidas ou sugestões:
 
 📜 Licença
 Distribuído sob licença MIT. Veja LICENSE para mais informações.
+
+<div align="center">✨ Feito com ❤️ por <a href="https://github.com/seuusuario">Daniel Colodete</a> ✨</div> ```
