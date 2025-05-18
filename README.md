@@ -4,84 +4,112 @@
   <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL">
   <img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
+  <img src="https://img.shields.io/github/license/seuusuario/bot-leilao?color=blue" alt="License">
 </p>
 
-> **Automatize leilões diretamente no Telegram**  
-> Cadastro de usuários • Sincronização de status • Acompanhamento de editais  
+<p align="center">
+  <strong>Automatize leilões diretamente no Telegram</strong><br>
+  Cadastro de usuários • Sincronização de status • Acompanhamento de editais
+</p>
 
 ---
 
-## ✨ Features
-
-✅ **Autenticação simplificada**  
-✅ **Sincronização em tempo real** com sites de leilão  
-✅ **Notificações automáticas** via Telegram  
-✅ **Painel administrativo** integrado  
-
----
-
-## 🛠️ Tecnologias
+## 🌟 Destaques
 
 <div align="center">
-
-| Backend         | Banco de Dados  | API           | Utilitários       |
-|-----------------|-----------------|---------------|-------------------|
-| ![Node.js]      | ![MySQL]        | ![Telegram]   | ![Dotenv]         |
+  
+| ✅ Autenticação Simplificada | ✅ Sincronização em Tempo Real | ✅ Notificações Automáticas |
+|-----------------------------|-------------------------------|----------------------------|
+| ![Auth](https://via.placeholder.com/150x100/2CA5E0/FFFFFF?text=Login) | ![Sync](https://via.placeholder.com/150x100/43853D/FFFFFF?text=Sync) | ![Notify](https://via.placeholder.com/150x100/005C84/FFFFFF?text=Alert) |
 
 </div>
 
-[Node.js]: https://img.shields.io/badge/Node.js-18.x-green
-[MySQL]: https://img.shields.io/badge/MySQL-8.0-blue
-[Telegram]: https://img.shields.io/badge/Telegram_Bot_API-6.7-lightgrey
-[Dotenv]: https://img.shields.io/badge/dotenv-16.0-yellow
+---
+
+## 🛠️ Stack Tecnológica
+
+<div align="center">
+
+| Categoria       | Tecnologias                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| **Backend**    | Node.js • Express • Axios                                                   |
+| **Banco**      | MySQL • Sequelize                                                           |
+| **Integração** | Telegram Bot API • Webhooks                                                 |
+| **Utilitários**| Dotenv • Nodemon • Moment.js                                                |
+
+</div>
 
 ---
 
-## 🚀 Instalação
+## 🚀 Começando
 
+### Pré-requisitos
+- Node.js 18+
+- MySQL 8+
+- Conta no Telegram
+
+### Instalação
 ```bash
-# Clone o repositório
-git clone https://github.com/seuusuario/bot-leilao.git && cd bot-leilao
+# Clone o projeto
+git clone https://github.com/seuusuario/bot-leilao.git
+cd bot-leilao
 
 # Instale as dependências
 npm install
 
-# Configure (renomeie e edite)
+# Configure o ambiente
 cp .env.example .env
-O bot irá iniciar e ficará disponível para interação no Telegram!
+nano .env  # Edite com suas credenciais
+Execução
+bash
+npm start  # Modo produção
+npm run dev  # Modo desenvolvimento (com hot-reload)
+🎯 Funcionalidades Principais
+🔹 Sistema de Autenticação Segura
 
----
+Cadastro com validação de e-mail
 
-## ⚙️ Funcionalidades
+Login com token JWT
 
-* Cadastro de novos usuários
-* Login com autenticação
-* Sincronização automática de status de sites de leilão
-* Notificações personalizadas no Telegram
+Recuperação de senha
 
----
+🔹 Integração com Leilões
 
-## 🤝 Como contribuir
+Sincronização automática de status
 
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature ou correção
-3. Commit suas alterações
-4. Envie um pull request detalhando as mudanças
+Rastreamento de lances
 
-Sugestões, melhorias e correções são muito bem-vindas!
+Alertas personalizados
 
----
+🔹 Painel Administrativo
 
-## 📬 Contato
+Gerenciamento de usuários
 
-* **Desenvolvedor:** Daniel Ambrosim Colodete
-* **E-mail:** [danielcolodete193@gmail.com](mailto:danielcolodete193@gmail.com)
-* **Telegram:** [@danielcolodete](https://t.me/danielcolodete)
-* **LinkedIn:** [linkedin.com/in/daniel-colodete](https://linkedin.com/in/daniel-colodete)
+Monitoramento de atividades
 
----
+Configurações do sistema
 
-## 📝 Licença
+📸 Demonstração
+<div align="center"> <img src="https://i.imgur.com/exemplo1.png" width="30%" alt="Tela de Login"> <img src="https://i.imgur.com/exemplo2.png" width="30%" alt="Painel"> <img src="https://i.imgur.com/exemplo3.png" width="30%" alt="Notificações"> </div>
+🤝 Contribuição
+Faça um fork do projeto (git fork)
 
-MIT
+Crie sua branch (git checkout -b feature/AmazingFeature)
 
+Commit suas mudanças (git commit -m 'Add some AmazingFeature')
+
+Push para a branch (git push origin feature/AmazingFeature)
+
+Abra um Pull Request
+
+📞 Suporte
+Entre em contato para dúvidas ou sugestões:
+
+📧 Email: danielcolodete193@gmail.com
+📱 Telegram: @danielcolodete
+💼 LinkedIn: Daniel Colodete
+
+📜 Licença
+Distribuído sob licença MIT. Veja LICENSE para mais informações.
+
+<div align="center"> ✨ Feito com ❤️ por <a href="https://github.com/seuusuario">Daniel Colodete</a> ✨ </div> ```
