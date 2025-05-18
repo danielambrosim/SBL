@@ -70,7 +70,7 @@ npm run dev    # Modo desenvolvimento (hot-reload)
 
 
 
-
+```markdown
 🎯 Funcionalidades Principais
 🔐 Sistema de Autenticação Segura
 
@@ -122,3 +122,6 @@ Entre em contato para dúvidas ou sugestões:
 Distribuído sob licença MIT. Veja LICENSE para mais informações.
 
 <div align="center">✨ Feito com ❤️ por <a href="https://github.com/seuusuario">Daniel Colodete</a> ✨</div> ```
+
+
+```markdown
