@@ -16,6 +16,9 @@ import { HandlersAdicionais } from './handlers/adicionais';
 // Importando serviços para busca de editais e sites do banco
 import { buscarEditais } from './services/edital';
 import { listarSites, atualizarStatusUsuariosNovosSites } from './db';
+// Importando serviços para enviar os dados do cadastros para os sites de leilões
+import { exportarUsuariosParaCSV } from './utils/exportarUsuarios';
+
 
 // 4. Inicializando o bot com o token do .env
 const token = process.env.TELEGRAM_TOKEN;
@@ -39,6 +42,13 @@ bot.onText(/\/syncsites/, async (msg) => {
   }
   await atualizarStatusUsuariosNovosSites();
   await bot.sendMessage(msg.chat.id, 'Sincronização de status concluída!');
+});
+
+// Comando admin /exportarusuarios
+bot.onText(/\/exportarusuarios/, async (msg) => {
+  if (msg.chat.id !== ADMIN_CHAT_ID) return bot.sendMessage(msg.chat.id, 'Acesso negado.');
+  const path = await exportarUsuariosParaCSV();
+  await bot.sendDocument(msg.chat.id, path, {}, { filename: 'usuarios_leilao.csv' });
 });
 
 // 8. Menu principal do bot (teclado Telegram)
@@ -165,6 +175,23 @@ bot.onText(/\/start/, async (msg) => {
 
 bot.onText(/\/ajuda/, (msg) => {
   bot.sendMessage(msg.chat.id, 'ℹ️ Este bot permite cadastro, login, consulta de status e acesso a editais!', mainMenu);
+});
+
+
+bot.on('callback_query', async (query) => {
+  const chatId = query.message?.chat.id;
+  const data = query.data;
+
+  // Responde seleção de site normalmente...
+  if (data?.startsWith('edital_')) { /* ... */ }
+
+  // Responde tópicos de ajuda
+  if (data?.startsWith('ajuda_')) {
+    const topic = data.replace('ajuda_', '');
+    await HandlersAdicionais.processarAjudaCallback(chatId!, topic);
+  }
+
+  if (query.id) await bot.answerCallbackQuery(query.id);
 });
 
 // 13. Handlers para erros globais (para não travar em caso de erro inesperado)
