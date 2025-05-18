@@ -1,7 +1,3 @@
-Perfeito! Aqui está seu **README.md** completo e personalizado com seus dados de contato, pronto para copiar e colar:
-
----
-
 ````markdown
 # Sistema Bot Leilão
 
@@ -83,12 +79,3 @@ Sugestões, melhorias e correções são muito bem-vindas!
 
 MIT
 
----
-
-```
-
----
-
-Se quiser adicionar badges, um exemplo visual do bot, ou qualquer outro recurso, só avisar!  
-Se precisar de um `.env.example` ou qualquer outro arquivo de estrutura, só pedir!
-```
