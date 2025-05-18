@@ -49,9 +49,9 @@
 - Conta no Telegram
 
 ### **Instalação**
+## 🚀 Clone o projeto
 
 ```bash
-# Clone o projeto
 git clone https://github.com/seuusuario/bot-leilao.git
 cd bot-leilao
 
@@ -61,16 +61,12 @@ npm install
 # Configure o ambiente
 cp .env.example .env
 nano .env  # Edite com suas credenciais
-
-## ▶️ Execução
-
-```bash
+▶️ Execução
+bash
+Copiar
+Editar
 npm start      # Modo produção
 npm run dev    # Modo desenvolvimento (hot-reload)
-
-
-
-```markdown
 🎯 Funcionalidades Principais
 🔐 Sistema de Autenticação Segura
 
@@ -122,6 +118,3 @@ Entre em contato para dúvidas ou sugestões:
 Distribuído sob licença MIT. Veja LICENSE para mais informações.
 
 <div align="center">✨ Feito com ❤️ por <a href="https://github.com/seuusuario">Daniel Colodete</a> ✨</div> ```
-
-
-```markdown
