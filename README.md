@@ -1,47 +1,53 @@
-````markdown
-# Sistema Bot Leilão
+# 🏆 Sistema Bot Leilão Telegram
 
-## 📋 Descrição
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL">
+  <img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
+</p>
 
-O **Sistema Bot Leilão** é um bot para o Telegram desenvolvido para automatizar o cadastro de usuários, login e a sincronização de status de sites de leilão. O objetivo é facilitar o acompanhamento de editais e processos de leilão, trazendo agilidade e praticidade para os usuários, tudo diretamente pelo Telegram.
-
----
-
-## 🚀 Tecnologias Utilizadas
-
-- **Node.js**
-- **MySQL**
-- **Telegram Bot API**
-- **dotenv** (gerenciamento de variáveis ambiente)
-- **Outras dependências** (consulte o `package.json`)
+> **Automatize leilões diretamente no Telegram**  
+> Cadastro de usuários • Sincronização de status • Acompanhamento de editais  
 
 ---
 
-## 💻 Como instalar
+## ✨ Features
 
-1. **Clone o repositório:**
-    ```bash
-    git clone https://github.com/seuusuario/seurepositorio.git
-    cd seurepositorio
-    ```
-
-2. **Instale as dependências:**
-    ```bash
-    npm install
-    ```
-
-3. **Configure as variáveis de ambiente:**
-    - Renomeie o arquivo `.env.example` para `.env`.
-    - Preencha com seus dados de acesso ao banco e token do bot.
+✅ **Autenticação simplificada**  
+✅ **Sincronização em tempo real** com sites de leilão  
+✅ **Notificações automáticas** via Telegram  
+✅ **Painel administrativo** integrado  
 
 ---
 
-## ▶️ Como rodar
+## 🛠️ Tecnologias
+
+<div align="center">
+
+| Backend         | Banco de Dados  | API           | Utilitários       |
+|-----------------|-----------------|---------------|-------------------|
+| ![Node.js]      | ![MySQL]        | ![Telegram]   | ![Dotenv]         |
+
+</div>
+
+[Node.js]: https://img.shields.io/badge/Node.js-18.x-green
+[MySQL]: https://img.shields.io/badge/MySQL-8.0-blue
+[Telegram]: https://img.shields.io/badge/Telegram_Bot_API-6.7-lightgrey
+[Dotenv]: https://img.shields.io/badge/dotenv-16.0-yellow
+
+---
+
+## 🚀 Instalação
 
 ```bash
-npm start
-````
+# Clone o repositório
+git clone https://github.com/seuusuario/bot-leilao.git && cd bot-leilao
 
+# Instale as dependências
+npm install
+
+# Configure (renomeie e edite)
+cp .env.example .env
 O bot irá iniciar e ficará disponível para interação no Telegram!
 
 ---
