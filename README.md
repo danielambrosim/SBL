@@ -61,3 +61,10 @@ npm install
 # Configure o ambiente
 cp .env.example .env
 nano .env  # Edite com suas credenciais
+
+---
+### **Instalação**
+## ▶️ Execução
+
+npm start      # Modo produção
+npm run dev    # Modo desenvolvimento (hot-reload)
