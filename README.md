@@ -51,8 +51,6 @@
 ### **Instalação**
 ## 🚀 Clone o projeto
 
-## 🚀 Clone o projeto
-
 ```bash
 git clone https://github.com/seuusuario/bot-leilao.git
 cd bot-leilao
