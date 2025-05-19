@@ -1,6 +1,6 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import { buscarEditalBanco } from '../db';
+import { buscarEditaisBanco } from '../db';
 
 export interface Edital {
   titulo: string;
@@ -33,9 +33,9 @@ export async function buscarEditais(url: string, seletor: string = 'a[href$=".pd
     console.error('Erro ao buscar editais:', error.response?.status, error.message);
 
     // Aqui busca no banco caso o scraping falhe
-    const editalBanco = await buscarEditalBanco();
-    if (editalBanco) {
-      return [editalBanco];
+      const editaisBanco = await buscarEditaisBanco(5);
+    if (editaisBanco.length > 0) {
+      return editaisBanco;
     }
     // Caso nem no banco tenha, retorna um exemplo
     return [

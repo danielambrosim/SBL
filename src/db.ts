@@ -115,10 +115,9 @@ export const connectionPromise = mysql.createConnection({ /* ... */ });
 // Função para buscar o edital mais recente do banco:
 type Edital = { titulo: string; link: string; };
 
-export async function buscarEditalBanco(): Promise<Edital | null> {
-  const [rows] = await pool.query('SELECT titulo, url_pdf as link FROM editais ORDER BY data_publicacao DESC LIMIT 1') as [Edital[], any];
-  if (rows.length > 0) {
-    return rows[0];
-  }
-  return null;
+export async function buscarEditaisBanco(qtd: number = 5): Promise<{ titulo: string, link: string }[]> {
+  const [rows] = await pool.query(
+    'SELECT titulo, url_pdf as link FROM editais ORDER BY data_publicacao DESC LIMIT ?', [qtd]
+  ) as [any[], any];
+  return rows;
 }
