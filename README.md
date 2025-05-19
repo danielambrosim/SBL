@@ -82,4 +82,4 @@ Entre em contato para dúvidas ou sugestões:
 📜 Licença
 Distribuído sob licença MIT. Veja LICENSE para mais informações.
 
-<div align="center">✨ Feito com ❤️ por <a href="https://github.com/seuusuario">Daniel Colodete</a> ✨</div> ```
+<div align="center">✨ Feito com ❤️ por <a href="https://github.com/danielambrosim/SBL.git">Daniel Colodete</a> ✨</div> ```
