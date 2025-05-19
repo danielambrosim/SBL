@@ -16,8 +16,10 @@ import { HandlersAdicionais } from './handlers/adicionais';
 // Importando serviços para busca de editais e sites do banco
 import { buscarEditais } from './services/edital';
 import { listarSites, atualizarStatusUsuariosNovosSites } from './db';
+import { pool as connection } from './db';
 // Importando serviços para enviar os dados do cadastros para os sites de leilões
 import { exportarUsuariosParaCSV } from './utils/exportarUsuarios';
+
 
 
 // 4. Inicializando o bot com o token do .env
@@ -201,6 +203,32 @@ process.on('unhandledRejection', (error) => {
 process.on('uncaughtException', (error) => {
   console.error('Exceção não capturada:', error);
 });
+
+export async function listarEditais() {
+  const [rows] = await connection.query('SELECT * FROM editais ORDER BY data_publicacao DESC');
+  return rows as any[];
+}
+
+// Essa parte está aqui para compor um teste de editais para o sistema do bot;
+bot.onText(/\/editais/, async (msg) => {
+  const chatId = msg.chat.id;
+  const editais = await listarEditais();
+
+  if (editais.length) {
+    let mensagem = '📑 *Editais disponíveis:*\n\n';
+    for (const edital of editais) {
+      // data_publicacao pode ser Date ou string
+      const dataFormatada = (edital.data_publicacao instanceof Date)
+        ? edital.data_publicacao.toISOString().split('T')[0]
+        : edital.data_publicacao;
+      mensagem += `*${edital.titulo}* (${dataFormatada})\n[Ver PDF](${edital.url_pdf})\n\n`;
+    }
+    await bot.sendMessage(chatId, mensagem, { parse_mode: 'Markdown' });
+  } else {
+    await bot.sendMessage(chatId, 'Nenhum edital disponível no momento.');
+  }
+});
+
 
 // 14. Confirma início do bot no console do servidor
 console.log('🤖 Bot iniciado!');

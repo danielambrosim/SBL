@@ -1,5 +1,6 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import { buscarEditalBanco } from '../db';
 
 export interface Edital {
   titulo: string;
@@ -8,12 +9,14 @@ export interface Edital {
 
 export async function buscarEditais(url: string, seletor: string = 'a[href$=".pdf"]'): Promise<Edital[]> {
   try {
-    const { data } = await axios.get<string>(url, {
+    const response = await axios.get<string>(url, {
       timeout: 10000,
       headers: { 'User-Agent': 'Mozilla/5.0 (Bot Leilao)' }
     });
 
-    const $ = cheerio.load(data);
+    if (!response.data) throw new Error('Sem conteúdo retornado do site.');
+
+    const $ = cheerio.load(response.data);
     const editais: Edital[] = [];
 
     $(seletor).each((_, element) => {
@@ -26,8 +29,20 @@ export async function buscarEditais(url: string, seletor: string = 'a[href$=".pd
     });
 
     return editais.slice(0, 10); // Limita a 10 resultados
-  } catch (error) {
-    console.error('Erro ao buscar editais:', error);
-    return [];
+  } catch (error: any) {
+    console.error('Erro ao buscar editais:', error.response?.status, error.message);
+
+    // Aqui busca no banco caso o scraping falhe
+    const editalBanco = await buscarEditalBanco();
+    if (editalBanco) {
+      return [editalBanco];
+    }
+    // Caso nem no banco tenha, retorna um exemplo
+    return [
+      {
+        titulo: 'Nenhum edital encontrado',
+        link: '#'
+      }
+    ];
   }
 }

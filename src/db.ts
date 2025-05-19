@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
+
 dotenv.config();
 
 export const pool = mysql.createPool({
@@ -106,4 +107,18 @@ export async function atualizarStatusUsuariosNovosSites() {
     WHERE su.id IS NULL;
   `;
   await pool.execute(sql);
+}
+
+export const connectionPromise = mysql.createConnection({ /* ... */ });
+
+
+// Função para buscar o edital mais recente do banco:
+type Edital = { titulo: string; link: string; };
+
+export async function buscarEditalBanco(): Promise<Edital | null> {
+  const [rows] = await pool.query('SELECT titulo, url_pdf as link FROM editais ORDER BY data_publicacao DESC LIMIT 1') as [Edital[], any];
+  if (rows.length > 0) {
+    return rows[0];
+  }
+  return null;
 }
