@@ -1,7 +1,7 @@
 import { bot, userSessions } from '../bot';
 import { validarEmail, validarCPF, validarCNPJ, validarSenha } from '../utils/validacao';
-import { salvarUsuario, listarSites, salvarStatusSiteUsuario } from '../db';
-import { enviarCodigo } from '../utils/mail'; // importe sua função de envio de código!
+import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorChatId } from '../db';
+import { enviarCodigo } from '../utils/mail';
 import { Message } from 'node-telegram-bot-api';
 
 interface CadastroState {
@@ -138,6 +138,15 @@ export const HandlersCadastro = {
           return;
         }
         session.senhaConfirmacao = text;
+
+        // VERIFICA se já existe usuário com esse chat_id
+        const usuarioExistente = await buscarUsuarioPorChatId(chatId);
+        if (usuarioExistente) {
+          await bot.sendMessage(chatId, 'Você já está cadastrado! Use /start para acessar o menu.');
+          userSessions.delete(chatId);
+          return;
+        }
+
         // Finaliza cadastro e salva usuário
         const usuarioId = await salvarUsuario({
           nome: session.nome!,
