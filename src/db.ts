@@ -2,7 +2,6 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
-
 dotenv.config();
 
 export const pool = mysql.createPool({
@@ -16,7 +15,7 @@ export const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Interface para usuário (ou use do types/usuario.ts se preferir)
+// Interfaces para tipos
 export interface Usuario {
   id?: number;
   nome: string;
@@ -31,7 +30,6 @@ export interface Usuario {
   criado_em?: Date;
 }
 
-// Interface site (ou use do types/site.ts)
 export interface SiteLeilao {
   id: number;
   nome: string;
@@ -39,7 +37,6 @@ export interface SiteLeilao {
   seletor: string;
 }
 
-// Interface status do usuário por site (ou use types/status.ts)
 export interface StatusSiteUsuario {
   id: number;
   usuario_id: number;
@@ -48,7 +45,8 @@ export interface StatusSiteUsuario {
   atualizado_em: Date;
 }
 
-// Funções básicas para uso nos handlers
+// --- FUNÇÕES USUÁRIO ---
+
 export async function salvarUsuario(usuario: Usuario): Promise<number> {
   const sql = `INSERT INTO usuarios
     (nome, email, cpf, cnpj, senha, endereco, chat_id, imagem_doc_id, comprovante_residencia_id)
@@ -78,6 +76,14 @@ export async function buscarUsuarioPorChatId(chat_id: number): Promise<Usuario |
   const [rows]: any = await pool.execute(sql, [chat_id]);
   return rows[0] || null;
 }
+
+// Função utilitária para evitar duplicidade de cadastro
+export async function usuarioExistePorChatId(chat_id: number): Promise<boolean> {
+  const usuario = await buscarUsuarioPorChatId(chat_id);
+  return !!usuario;
+}
+
+// --- FUNÇÕES SITES E STATUS ---
 
 export async function listarSites(): Promise<SiteLeilao[]> {
   const sql = 'SELECT * FROM sites_leilao';
@@ -109,15 +115,17 @@ export async function atualizarStatusUsuariosNovosSites() {
   await pool.execute(sql);
 }
 
-export const connectionPromise = mysql.createConnection({ /* ... */ });
+// --- BUSCAR EDITAIS ---
 
-
-// Função para buscar o edital mais recente do banco:
 type Edital = { titulo: string; link: string; };
 
-export async function buscarEditaisBanco(qtd: number = 5): Promise<{ titulo: string, link: string }[]> {
+export async function buscarEditaisBanco(qtd: number = 5): Promise<Edital[]> {
   const [rows] = await pool.query(
     'SELECT titulo, url_pdf as link FROM editais ORDER BY data_publicacao DESC LIMIT ?', [qtd]
   ) as [any[], any];
   return rows;
 }
+
+// (opcional, caso use conexão direta em outro lugar)
+export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
+
