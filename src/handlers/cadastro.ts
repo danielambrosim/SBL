@@ -1,6 +1,7 @@
 import { bot, userSessions } from '../bot';
 import { validarEmail, validarCPF, validarCNPJ, validarSenha } from '../utils/validacao';
 import { salvarUsuario, listarSites, salvarStatusSiteUsuario } from '../db';
+import { enviarCodigo } from '../utils/mail'; // importe sua função de envio de código!
 import { Message } from 'node-telegram-bot-api';
 
 interface CadastroState {
@@ -46,82 +47,94 @@ export const HandlersCadastro = {
           return;
         }
         session.email = text;
-        // Aqui você pode implementar envio de código por e-mail se quiser
+        // Gerar código de confirmação
+        const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+        session.codigo = codigo;
+        await enviarCodigo(session.email, codigo);
         session.etapa = 3;
-        await bot.sendMessage(chatId, 'Digite seu CPF (apenas números):');
+        await bot.sendMessage(chatId, 'Enviamos um código de confirmação para seu e-mail. Digite o código recebido:');
         break;
 
       case 3:
+        if (!text || text !== session.codigo) {
+          await bot.sendMessage(chatId, 'Código incorreto ou inválido. Digite o código enviado ao seu e-mail:');
+          return;
+        }
+        session.etapa = 4;
+        await bot.sendMessage(chatId, 'Código confirmado! Agora digite seu CPF (apenas números):');
+        break;
+
+      case 4:
         if (!text || !validarCPF(text)) {
           await bot.sendMessage(chatId, 'CPF inválido. Digite novamente (apenas números):');
           return;
         }
         session.cpf = text;
-        session.etapa = 4;
+        session.etapa = 5;
         await bot.sendMessage(chatId, 'Deseja informar CNPJ? (opcional)\nResponda "sim" para informar ou "não" para pular.');
         break;
 
-      case 4:
+      case 5:
         if (text?.toLowerCase() === 'sim') {
-          session.etapa = 5;
+          session.etapa = 6;
           await bot.sendMessage(chatId, 'Digite seu CNPJ (apenas números):');
         } else if (text?.toLowerCase() === 'não' || text?.toLowerCase() === 'nao') {
-          session.etapa = 6;
+          session.etapa = 7;
           await bot.sendMessage(chatId, 'Digite seu endereço completo:');
         } else {
           await bot.sendMessage(chatId, 'Responda apenas com "sim" ou "não":');
         }
         break;
 
-      case 5:
+      case 6:
         if (!text || !validarCNPJ(text)) {
           await bot.sendMessage(chatId, 'CNPJ inválido. Digite novamente ou responda "não" para pular.');
           return;
         }
         session.cnpj = text;
-        session.etapa = 6;
+        session.etapa = 7;
         await bot.sendMessage(chatId, 'Digite seu endereço completo:');
         break;
 
-      case 6:
+      case 7:
         if (!text || text.length < 8) {
           await bot.sendMessage(chatId, 'Endereço muito curto. Digite o endereço completo:');
           return;
         }
         session.endereco = text;
-        session.etapa = 7;
+        session.etapa = 8;
         await bot.sendMessage(chatId, 'Envie uma foto do seu documento (frente):');
         break;
 
-      case 7:
-        await bot.sendMessage(chatId, 'Por favor, envie a foto do seu documento.');
-        // processarDocumento é chamado quando receber a foto
-        break;
-
       case 8:
-        await bot.sendMessage(chatId, 'Por favor, envie a foto do seu comprovante de residência.');
-        // processarDocumento é chamado quando receber a foto
+        await bot.sendMessage(chatId, 'Por favor, envie a foto do seu documento.');
+        // Aqui entra o processarDocumento para a foto do documento (imagem_doc_id)
         break;
 
       case 9:
-        await bot.sendMessage(chatId, 'Crie uma senha (mínimo 6 caracteres):');
-        session.etapa = 10;
+        await bot.sendMessage(chatId, 'Por favor, envie a foto do seu comprovante de residência.');
+        // Aqui entra o processarDocumento para o comprovante (comprovante_residencia_id)
         break;
 
       case 10:
+        await bot.sendMessage(chatId, 'Crie uma senha (mínimo 6 caracteres):');
+        session.etapa = 11;
+        break;
+
+      case 11:
         if (!text || !validarSenha(text)) {
           await bot.sendMessage(chatId, 'Senha fraca. Digite uma senha com pelo menos 6 caracteres:');
           return;
         }
         session.senha = text;
-        session.etapa = 11;
+        session.etapa = 12;
         await bot.sendMessage(chatId, 'Confirme sua senha:');
         break;
 
-      case 11:
+      case 12:
         if (text !== session.senha) {
           await bot.sendMessage(chatId, 'Senhas não coincidem! Digite a senha novamente:');
-          session.etapa = 10;
+          session.etapa = 11;
           return;
         }
         session.senhaConfirmacao = text;
@@ -156,13 +169,13 @@ export const HandlersCadastro = {
   },
 
   processarDocumento: async (chatId: number, session: CadastroState, fileId: string) => {
-    if (session.etapa === 7) {
+    if (session.etapa === 8) {
       session.imagem_doc_id = fileId;
-      session.etapa = 8;
-      await bot.sendMessage(chatId, 'Foto recebida! Agora envie a foto do comprovante de residência:');
-    } else if (session.etapa === 8) {
-      session.comprovante_residencia_id = fileId;
       session.etapa = 9;
+      await bot.sendMessage(chatId, 'Foto recebida! Agora envie a foto do comprovante de residência:');
+    } else if (session.etapa === 9) {
+      session.comprovante_residencia_id = fileId;
+      session.etapa = 10;
       await bot.sendMessage(chatId, 'Comprovante recebido! Agora crie uma senha:');
     }
     session.lastActivity = Date.now();
