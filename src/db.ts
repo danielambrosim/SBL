@@ -126,6 +126,23 @@ export async function buscarEditaisBanco(qtd: number = 5): Promise<Edital[]> {
   return rows;
 }
 
+// Busca um edital pelo link (para evitar duplicidade)
+export async function buscarEditalPorLink(link: string) {
+  const sql = `SELECT * FROM editais WHERE url_pdf = ? LIMIT 1`;
+  const [rows]: any = await pool.execute(sql, [link]);
+  return rows[0] || null;
+}
+
+// Insere um edital novo
+export async function inserirEdital(edital: { titulo: string; link: string; data?: string; }) {
+  const sql = `INSERT INTO editais (titulo, url_pdf, data_publicacao) VALUES (?, ?, ?)`;
+  await pool.execute(sql, [
+    edital.titulo,
+    edital.link,
+    edital.data ?? null
+  ]);
+}
+
 // (opcional, caso use conexão direta em outro lugar)
 export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
 
