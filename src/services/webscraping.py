@@ -27,7 +27,7 @@ def inserir_edital(titulo, url_pdf, data_publicacao, descricao=None):
 
 def buscar_editais_no_site(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Bot Leilao)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
     }
     try:
         response = requests.get(url, headers=headers, timeout=10)

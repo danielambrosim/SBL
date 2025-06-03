@@ -14,7 +14,7 @@ import { HandlersLogin, loginSessions } from './handlers/login';
 import { HandlersStatus } from './handlers/status';
 import { HandlersAdicionais } from './handlers/adicionais';
 // Importando serviços para busca de editais e sites do banco
-import { buscarEditais } from './services/edital';
+import { listarEditais as listarEditaisService } from './services/edital';
 import { listarSites, atualizarStatusUsuariosNovosSites } from './db';
 import { pool as connection } from './db';
 // Importando serviços para enviar os dados do cadastros para os sites de leilões
@@ -89,7 +89,6 @@ bot.on('callback_query', async (query) => {
   const chatId = query.message?.chat.id;
   const data = query.data;
 
-  // Só processa callback de edital (botão gerado pelo listarSitesParaBusca)
   if (data?.startsWith('edital_')) {
     const siteId = Number(data.replace('edital_', ''));
     const sites = await listarSites();
@@ -102,7 +101,8 @@ bot.on('callback_query', async (query) => {
 
     await bot.sendMessage(chatId!, `🔎 Buscando editais em: *${site.nome}*...`, { parse_mode: 'Markdown' });
 
-    const editais = await buscarEditais(site.url, site.seletor);
+    // Busca do banco (não do scraping) -- ajustar para filtrar por site se desejar!
+    const editais = await listarEditaisService(10);
 
     if (!editais.length) {
       await bot.sendMessage(chatId!, 'Nenhum edital encontrado neste site.');
@@ -117,12 +117,36 @@ bot.on('callback_query', async (query) => {
     await bot.sendMessage(chatId!, mensagem, { parse_mode: 'Markdown', disable_web_page_preview: true });
   }
 
-  // Sempre responda o callback para não deixar o botão "carregando"
   if (query.id) {
     await bot.answerCallbackQuery(query.id);
   }
 });
 
+// --- Handler para o comando /editais ---
+
+bot.onText(/\/editais/, async (msg) => {
+  const chatId = msg.chat.id;
+  const editais = await listarEditaisService(10);
+
+  if (editais.length) {
+    let mensagem = '📑 *Editais disponíveis:*\n\n';
+    for (const edital of editais) {
+      // data pode ser string, Date, null, etc
+      let dataFormatada = '';
+      if (edital.data) {
+        // Tenta converter para Date e formatar
+        const dataObj = new Date(edital.data);
+        dataFormatada = !isNaN(dataObj.getTime())
+          ? dataObj.toISOString().split('T')[0]
+          : String(edital.data);
+      }
+      mensagem += `*${edital.titulo}*${dataFormatada ? ` (${dataFormatada})` : ''}\n[Ver PDF](${edital.link})\n\n`;
+    }
+    await bot.sendMessage(chatId, mensagem, { parse_mode: 'Markdown' });
+  } else {
+    await bot.sendMessage(chatId, 'Nenhum edital disponível no momento.');
+  }
+});
 // 11. Handler de mensagens principais
 bot.on('message', async (msg: Message) => {
   const chatId = msg.chat.id;

@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 
 dotenv.config();
 
+// --- CONEXÃO ---
 export const pool = mysql.createPool({
   host: process.env.DATABASE_HOST || 'localhost',
   user: process.env.DATABASE_USER || 'root',
@@ -15,7 +16,7 @@ export const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Interfaces para tipos
+// --- TIPOS ---
 export interface Usuario {
   id?: number;
   nome: string;
@@ -45,8 +46,9 @@ export interface StatusSiteUsuario {
   atualizado_em: Date;
 }
 
-// --- FUNÇÕES USUÁRIO ---
+export type Edital = { titulo: string; link: string; data?: string };
 
+// --- USUÁRIOS ---
 export async function salvarUsuario(usuario: Usuario): Promise<number> {
   const sql = `INSERT INTO usuarios
     (nome, email, cpf, cnpj, senha, endereco, chat_id, imagem_doc_id, comprovante_residencia_id)
@@ -66,83 +68,76 @@ export async function salvarUsuario(usuario: Usuario): Promise<number> {
 }
 
 export async function buscarUsuarioPorEmail(email: string): Promise<Usuario | null> {
-  const sql = `SELECT * FROM usuarios WHERE email = ?`;
-  const [rows]: any = await pool.execute(sql, [email]);
+  const [rows]: any = await pool.execute(
+    'SELECT * FROM usuarios WHERE email = ?', [email]
+  );
   return rows[0] || null;
 }
 
 export async function buscarUsuarioPorChatId(chat_id: number): Promise<Usuario | null> {
-  const sql = `SELECT * FROM usuarios WHERE chat_id = ?`;
-  const [rows]: any = await pool.execute(sql, [chat_id]);
+  const [rows]: any = await pool.execute(
+    'SELECT * FROM usuarios WHERE chat_id = ?', [chat_id]
+  );
   return rows[0] || null;
 }
 
-// Função utilitária para evitar duplicidade de cadastro
 export async function usuarioExistePorChatId(chat_id: number): Promise<boolean> {
-  const usuario = await buscarUsuarioPorChatId(chat_id);
-  return !!usuario;
+  return !!(await buscarUsuarioPorChatId(chat_id));
 }
 
-// --- FUNÇÕES SITES E STATUS ---
-
+// --- SITES DE LEILÃO E STATUS ---
 export async function listarSites(): Promise<SiteLeilao[]> {
-  const sql = 'SELECT * FROM sites_leilao';
-  const [rows]: any = await pool.query(sql);
+  const [rows]: any = await pool.query('SELECT * FROM sites_leilao');
   return rows;
 }
 
 export async function listarStatusUsuarioPorSite(usuario_id: number): Promise<StatusSiteUsuario[]> {
-  const sql = `SELECT * FROM status_site_usuario WHERE usuario_id = ?`;
-  const [rows]: any = await pool.execute(sql, [usuario_id]);
+  const [rows]: any = await pool.execute(
+    'SELECT * FROM status_site_usuario WHERE usuario_id = ?', [usuario_id]
+  );
   return rows;
 }
 
 export async function salvarStatusSiteUsuario(usuario_id: number, site_id: number, status: string) {
-  const sql = `INSERT INTO status_site_usuario (usuario_id, site_id, status) VALUES (?, ?, ?)
-    ON DUPLICATE KEY UPDATE status = VALUES(status), atualizado_em = CURRENT_TIMESTAMP`;
-  await pool.execute(sql, [usuario_id, site_id, status]);
+  await pool.execute(
+    `INSERT INTO status_site_usuario (usuario_id, site_id, status) VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE status = VALUES(status), atualizado_em = CURRENT_TIMESTAMP`,
+    [usuario_id, site_id, status]
+  );
 }
 
 export async function atualizarStatusUsuariosNovosSites() {
-  const sql = `
+  await pool.execute(`
     INSERT INTO status_site_usuario (usuario_id, site_id, status)
     SELECT u.id, s.id, 'pendente'
     FROM usuarios u
     CROSS JOIN sites_leilao s
     LEFT JOIN status_site_usuario su ON su.usuario_id = u.id AND su.site_id = s.id
     WHERE su.id IS NULL;
-  `;
-  await pool.execute(sql);
+  `);
 }
 
-// --- BUSCAR EDITAIS ---
-
-type Edital = { titulo: string; link: string; };
-
+// --- EDITAIS ---
 export async function buscarEditaisBanco(qtd: number = 5): Promise<Edital[]> {
   const [rows] = await pool.query(
-    'SELECT titulo, url_pdf as link FROM editais ORDER BY data_publicacao DESC LIMIT ?', [qtd]
+    'SELECT titulo, url_pdf as link, data_publicacao as data FROM editais ORDER BY data_publicacao DESC LIMIT ?', [qtd]
   ) as [any[], any];
   return rows;
 }
 
-// Busca um edital pelo link (para evitar duplicidade)
 export async function buscarEditalPorLink(link: string) {
-  const sql = `SELECT * FROM editais WHERE url_pdf = ? LIMIT 1`;
-  const [rows]: any = await pool.execute(sql, [link]);
+  const [rows]: any = await pool.execute(
+    'SELECT * FROM editais WHERE url_pdf = ? LIMIT 1', [link]
+  );
   return rows[0] || null;
 }
 
-// Insere um edital novo
 export async function inserirEdital(edital: { titulo: string; link: string; data?: string; }) {
-  const sql = `INSERT INTO editais (titulo, url_pdf, data_publicacao) VALUES (?, ?, ?)`;
-  await pool.execute(sql, [
-    edital.titulo,
-    edital.link,
-    edital.data ?? null
-  ]);
+  await pool.execute(
+    'INSERT INTO editais (titulo, url_pdf, data_publicacao) VALUES (?, ?, ?)',
+    [edital.titulo, edital.link, edital.data ?? null]
+  );
 }
 
-// (opcional, caso use conexão direta em outro lugar)
+// --- OPCIONAL: CONEXÃO DIRETA ---
 export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
-
