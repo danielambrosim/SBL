@@ -27,11 +27,9 @@ npm install
 cp .env.example .env
 nano .env  # Edite com suas credenciais
 ▶️ Execução
-bash
-Copiar
-Editar
 npm start      # Modo produção
 npm run dev    # Modo desenvolvimento (hot-reload)
+
 🎯 Funcionalidades Principais
 🔐 Sistema de Autenticação Segura
 
