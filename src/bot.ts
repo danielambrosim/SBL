@@ -20,7 +20,15 @@ import { pool as connection } from './db';
 // Importando serviços para enviar os dados do cadastros para os sites de leilões
 import { exportarUsuariosParaCSV } from './utils/exportarUsuarios';
 
+// Importando serviços Express
+import express from "express";
+import enderecoRouter from "./routes/endereco";
 
+const app = express();
+app.use(express.json());
+app.use("/endereco", enderecoRouter);
+
+app.listen(3000, () => console.log("Servidor rodando na porta 3000"));
 
 // 4. Inicializando o bot com o token do .env
 const token = process.env.TELEGRAM_TOKEN;

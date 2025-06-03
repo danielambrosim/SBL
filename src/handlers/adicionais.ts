@@ -6,7 +6,7 @@ const AJUDA_TOPICOS: { [key: string]: string } = {
   login: "🔑 *Login*: Escolha 'Login' no menu e informe seu e-mail e senha. Após login, acesse as funções restritas.",
   editais: "📋 *Buscar Editais*: Clique em 'Editais' no menu, escolha o site desejado e veja os editais disponíveis para cada leilão.",
   status: "📊 *Meu Status*: Veja em quais sites você está pendente, ativo ou recusado após o cadastro.",
-  contato: "✉️ *Suporte*: Para dúvidas ou problemas, envie um e-mail para suporte@leilaobot.com.br ou fale com a equipe do leiloeiro."
+  contato: "✉️ *Suporte*: Para dúvidas ou problemas, envie um e-mail para bottcc3@gmail.com ou fale com a equipe do leiloeiro."
 };
 
 export const HandlersAdicionais = {
