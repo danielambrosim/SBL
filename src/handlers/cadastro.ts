@@ -3,6 +3,7 @@ import { validarEmail, validarCPF, validarCNPJ, validarSenha } from '../utils/va
 import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorChatId } from '../db';
 import { enviarCodigo } from '../utils/mail';
 import { Message } from 'node-telegram-bot-api';
+import termoAceitacao from '../termos/aceitacaoGeral';
 
 interface CadastroState {
   etapa: number;
@@ -21,16 +22,45 @@ interface CadastroState {
 
 export const HandlersCadastro = {
   iniciar: async (chatId: number) => {
-    userSessions.set(chatId, { etapa: 1, lastActivity: Date.now() });
-    await bot.sendMessage(chatId, 'Bem-vindo ao cadastro! Qual o seu nome completo?');
+    userSessions.set(chatId, { etapa: 0, lastActivity: Date.now() });
+    await bot.sendMessage(
+      chatId,
+      termoAceitacao,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          keyboard: [
+            [{ text: '✅ Aceito' }, { text: '❌ Não aceito' }]
+          ],
+          one_time_keyboard: true,
+          resize_keyboard: true
+        }
+      }
+    );
   },
 
   processarEtapa: async (msg: Message, session: CadastroState) => {
     const chatId = msg.chat.id;
-    const etapa = session.etapa || 1;
+    const etapa = session.etapa || 0;
     const text = msg.text?.trim();
 
     switch (etapa) {
+      case 0:
+        if (text === '✅ Aceito') {
+          session.etapa = 1;
+          await bot.sendMessage(chatId, 'Bem-vindo ao cadastro! Qual o seu nome completo?', {
+            reply_markup: { remove_keyboard: true }
+          });
+        } else if (text === '❌ Não aceito') {
+          await bot.sendMessage(chatId, 'Cadastro cancelado. Se quiser tentar novamente, escolha a opção de cadastro no menu.', {
+            reply_markup: { remove_keyboard: true }
+          });
+          userSessions.delete(chatId);
+        } else {
+          await bot.sendMessage(chatId, 'Por favor, responda usando "✅ Aceito" ou "❌ Não aceito".');
+        }
+        break;
+
       case 1:
         if (!text || text.length < 3) {
           await bot.sendMessage(chatId, 'Nome inválido. Digite seu nome completo:');
@@ -108,12 +138,12 @@ export const HandlersCadastro = {
 
       case 8:
         await bot.sendMessage(chatId, 'Por favor, envie a foto do seu documento.');
-        // Aqui entra o processarDocumento para a foto do documento (imagem_doc_id)
+        // O tratamento do arquivo é feito por processarDocumento().
         break;
 
       case 9:
         await bot.sendMessage(chatId, 'Por favor, envie a foto do seu comprovante de residência.');
-        // Aqui entra o processarDocumento para o comprovante (comprovante_residencia_id)
+        // O tratamento do arquivo é feito por processarDocumento().
         break;
 
       case 10:
