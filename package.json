@@ -29,5 +29,13 @@
     "@types/nodemailer": "^6.4.17",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danielambrosim/SBL.git"
+  },
+  "bugs": {
+    "url": "https://github.com/danielambrosim/SBL/issues"
+  },
+  "homepage": "https://github.com/danielambrosim/SBL#readme"
 }
