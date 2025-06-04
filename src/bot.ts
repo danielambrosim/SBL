@@ -21,7 +21,8 @@ import { pool as connection } from './db';
 import { exportarUsuariosParaCSV } from './utils/exportarUsuarios';
 
 import express from "express";
-import adminRouter from "./api/admin/admin";
+import adminRouter from "./routes/admin";
+
 
 const app = express();
 app.use(express.json());
