@@ -21,7 +21,7 @@ export interface Usuario {
   email: string;
   cpf: string;
   cnpj?: string;
-  senha: string;
+  senha: string;  // <--- Deixe opcional
   endereco: string;
   chat_id: number;
   imagem_doc_id?: string;

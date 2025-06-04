@@ -1,10 +1,10 @@
-import { bot, userSessions } from '../bot';
+import { bot, userSessions, ADMIN_CHAT_ID } from '../bot';
 import { validarEmail, validarCPF, validarCNPJ, validarSenha } from '../utils/validacao';
-import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorChatId } from '../db';
+import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorChatId, Usuario } from '../db';
 import { enviarCodigo } from '../utils/mail';
 import { Message } from 'node-telegram-bot-api';
 import termoAceitacao from '../termos/aceitacaoGeral';
-import { ADMIN_CHAT_ID } from '../bot';
+
 
 interface CadastroState {
   etapa: number;
@@ -202,23 +202,35 @@ const usuarioSalvo = {
   // Adicione mais campos se quiser
 };
 
-// Função para enviar mensagem ao admin com dados do usuário
-async function notificarCadastroAdmin(usuario: typeof usuarioSalvo) {
-  const mensagem = `
-📢 *Novo cadastro recebido*
+// Função aceita qualquer objeto com os campos usados abaixo
+async function notificarCadastroAdmin(usuario: any, userId: number) {
+  const mensagemAdmin = `
+👤 *Novo cadastro realizado!*
 
-Nome: ${usuario.nome}
-Email: ${usuario.email}
-CPF: ${usuario.cpf}
-Endereço: ${usuario.endereco}
-Chat ID: ${usuario.chat_id}
+*Nome:* ${usuario.nome}
+*Email:* ${usuario.email}
+*CPF:* ${usuario.cpf}
+${usuario.cnpj ? `*CNPJ:* ${usuario.cnpj}\n` : ''}
+*Endereço:* ${usuario.endereco}
+*Chat ID:* ${usuario.chat_id}
+*Data do cadastro:* ${new Date().toLocaleString('pt-BR')}
+id no banco: ${userId}
   `;
 
-  await bot.sendMessage(ADMIN_CHAT_ID, mensagem, { parse_mode: 'Markdown' });
+  await bot.sendMessage(ADMIN_CHAT_ID, mensagemAdmin, { parse_mode: 'Markdown' });
+
+  // Se tiver arquivos:
+  if (usuario.imagem_doc_id) {
+    await bot.sendDocument(ADMIN_CHAT_ID, usuario.imagem_doc_id, { caption: 'Documento do usuário' });
+  }
+  if (usuario.comprovante_residencia_id) {
+    await bot.sendDocument(ADMIN_CHAT_ID, usuario.comprovante_residencia_id, { caption: 'Comprovante de residência' });
+  }
 }
 
-// Agora avisa o admin
-await notificarCadastroAdmin(usuarioSalvo);
+const userId = await salvarUsuario(usuarioSalvo);
+await notificarCadastroAdmin(usuarioSalvo, userId);
+
 
         // Para cada site, status "pendente"
         const sites = await listarSites();
