@@ -1,0 +1,12 @@
+.admin-container {
+  padding: 32px;
+}
+.admin-card {
+  border: 1px solid #ccc;
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 6px;
+}
+.status-btn {
+  margin-right: 4px;
+}

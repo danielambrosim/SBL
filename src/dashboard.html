@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin - Leilões</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    .user-box { border: 1px solid #ccc; padding: 12px; margin-bottom: 18px; border-radius: 6px; }
+    .site-status { margin-top: 8px; }
+    button { margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <h2>Dashboard Admin - Leilões</h2>
+  <div id="usuarios"></div>
+  <script>
+    // Substitua por seu endpoint real
+    const API_URL = "http://localhost:3000/api/admin";
+
+    async function carregarUsuarios() {
+      const res = await fetch(`${API_URL}/usuarios`);
+      const users = await res.json();
+      const box = document.getElementById("usuarios");
+      box.innerHTML = "";
+      users.forEach(u => {
+        const userDiv = document.createElement("div");
+        userDiv.className = "user-box";
+        userDiv.innerHTML = `
+          <b>${u.nome}</b> <br>Email: ${u.email} <br>CPF: ${u.cpf}<br>Endereço: ${u.endereco}
+          <br>
+          <b>Status em sites:</b>
+          <div class="site-status">
+            ${u.sites.map(site => `
+              <div>
+                <b>${site.nome}:</b> <span id="status-${u.id}-${site.id}">${site.status}</span>
+                <button onclick="mudaStatus(${u.id}, ${site.id}, 'ativo')">Ativar</button>
+                <button onclick="mudaStatus(${u.id}, ${site.id}, 'pendente')">Pendente</button>
+                <button onclick="mudaStatus(${u.id}, ${site.id}, 'recusado')">Recusar</button>
+                <button onclick="copiar('${[u.nome, u.email, u.cpf, u.endereco].join(", ")}')">Copiar dados</button>
+              </div>
+            `).join("")}
+          </div>
+        `;
+        box.appendChild(userDiv);
+      });
+    }
+
+    async function mudaStatus(usuarioId, siteId, status) {
+      await fetch(`${API_URL}/usuarios/${usuarioId}/sites/${siteId}/status`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ status })
+      });
+      document.getElementById(`status-${usuarioId}-${siteId}`).textContent = status;
+    }
+
+    function copiar(texto) {
+      navigator.clipboard.writeText(texto);
+      alert("Dados copiados para área de transferência!");
+    }
+
+    carregarUsuarios();
+  </script>
+</body>
+</html>
