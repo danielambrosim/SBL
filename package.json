@@ -1,12 +1,12 @@
 {
   "name": "sbl",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/bot.js",
   "scripts": {
-    "start": "ts-node src/bot.ts",
-    "dev": "ts-node src/bot.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "start": "ts-node src/bot.ts",
+  "dev": "ts-node src/bot.ts",
+  "test": "echo \"Error: no test specified\" && exit 1"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -29,7 +29,7 @@
     "@types/express": "^5.0.2",
     "@types/jest": "^29.5.14",
     "@types/json2csv": "^5.0.7",
-    "@types/node": "^22.15.18",
+    "@types/node": "^22.15.29",
     "@types/node-telegram-bot-api": "^0.64.8",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19.1.6",
