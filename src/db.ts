@@ -1,7 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
-import { Edital as EditalType } from './types/edital';
 
 dotenv.config();
 
@@ -47,9 +46,13 @@ export interface StatusSiteUsuario {
   atualizado_em: Date;
 }
 
-export type Edital = { titulo: string; link: string; data?: string };
-
-
+// Corrija o tipo Edital para refletir as colunas do banco
+export type Edital = { 
+  id: number;
+  titulo: string;
+  link: string;    // url_pdf do banco
+  data: string;    // data_publicacao do banco
+};
 
 // --- USUÁRIOS ---
 export async function salvarUsuario(usuario: Usuario): Promise<number> {
@@ -126,9 +129,7 @@ export async function buscarEditaisBanco(qtd: number): Promise<Edital[]> {
     `SELECT 
       id, 
       titulo, 
-      url_pdf, 
-      data_publicacao,
-      url_pdf as link,
+      url_pdf as link, 
       data_publicacao as data
     FROM editais 
     ORDER BY data_publicacao DESC 
@@ -136,12 +137,8 @@ export async function buscarEditaisBanco(qtd: number): Promise<Edital[]> {
     [qtd]
   ) as [Edital[], any];
   
-  return rows.map(row => ({
-    ...row,
-    // Garante que os campos principais existam
-    url_pdf: obj.url_pdf || "",
-    data_publicacao: row.data_publicacao || row.data
-  }));
+  // Já retorna no formato certo
+  return rows as Edital[];
 }
 
 export async function buscarEditalPorLink(url: string): Promise<Edital | null> {
@@ -149,9 +146,7 @@ export async function buscarEditalPorLink(url: string): Promise<Edital | null> {
     `SELECT 
       id, 
       titulo, 
-      url_pdf, 
-      data_publicacao,
-      url_pdf as link,
+      url_pdf as link, 
       data_publicacao as data
     FROM editais 
     WHERE url_pdf = ? 
@@ -159,7 +154,7 @@ export async function buscarEditalPorLink(url: string): Promise<Edital | null> {
     [url]
   ) as [Edital[], any];
 
-  return rows[0] || null;
+  return (rows as Edital[])[0] || null;
 }
 
 export async function inserirEdital(edital: Edital): Promise<void> {
@@ -167,12 +162,11 @@ export async function inserirEdital(edital: Edital): Promise<void> {
     'INSERT INTO editais (titulo, url_pdf, data_publicacao) VALUES (?, ?, ?)',
     [
       edital.titulo,
-      edital.url_pdf || edital.link!, // ! indica que sabemos que um dos dois existe
-      edital.data_publicacao || edital.data! || new Date().toISOString()
+      edital.link,
+      edital.data || new Date().toISOString()
     ]
   );
 }
-
 
 // --- PAINEL DO ADMIN ---
 export async function buscarUsuariosPainelAdmin() {
@@ -199,7 +193,6 @@ export async function buscarUsuariosPainelAdmin() {
   }));
 }
 
-
 export async function atualizarStatusUsuarioNoBanco(usuarioId: number, status: 'ativo' | 'pendente' | 'recusado') {
   const sql = `UPDATE status_site_usuario SET status = ? WHERE usuario_id = ?`;
   await pool.execute(sql, [status, usuarioId]);
@@ -209,7 +202,6 @@ export async function buscarUsuariosNoBanco(): Promise<Usuario[]> {
   const [rows] = await pool.query('SELECT * FROM usuarios');
   return rows as Usuario[];
 }
-
 
 // --- OPCIONAL: CONEXÃO DIRETA ---
 export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
