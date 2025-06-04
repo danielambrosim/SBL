@@ -1,6 +1,9 @@
 import TelegramBot, { Message, ParseMode  } from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
 import { atualizarStatusUsuarioNoBanco } from './db'; // ajuste o caminho
+import { Usuario } from './db'; // Ajuste o caminho para onde a interface está
+import { buscarUsuariosNoBanco } from './db'; // Ajuste o caminho conforme sua estrutura
+
 
 // 1. Carregando variáveis do arquivo .env (sempre no topo)
 dotenv.config();
@@ -323,5 +326,60 @@ bot.onText(/\/editais/, async (msg) => {
   }
 });
 
+bot.onText(/\/usuarios/, async (msg) => {
+  if (msg.chat.id !== ADMIN_CHAT_ID) {
+    await bot.sendMessage(msg.chat.id, "❌ Acesso negado.");
+    return;
+  }
+
+  const usuarios = await buscarUsuariosNoBanco();
+  if (usuarios.length === 0) {
+    await bot.sendMessage(msg.chat.id, "Nenhum usuário cadastrado.");
+    return;
+  }
+
+  const keyboard = usuarios.map(u => ([{
+    text: u.nome,
+    callback_data: `usuario_${u.id}`
+  }]));
+
+  await bot.sendMessage(msg.chat.id, "Selecione um usuário para ver detalhes:", {
+    reply_markup: {
+      inline_keyboard: keyboard
+    }
+  });
+});
+
+// Depois, trate o callback para mostrar detalhes do usuário:
+bot.on('callback_query', async (query) => {
+  if (!query.data) return;
+
+  const chatId = query.message?.chat.id;
+  if (chatId !== ADMIN_CHAT_ID) return; // só admin pode acessar
+
+  if (query.data.startsWith('usuario_')) {
+    const userId = Number(query.data.split('_')[1]);
+    const usuarios = await buscarUsuariosNoBanco();
+    const usuario = usuarios.find(u => u.id === userId);
+
+    if (!usuario) {
+      await bot.sendMessage(chatId!, "Usuário não encontrado.");
+      return;
+    }
+
+    const detalhes = `
+👤 *Detalhes do usuário:*
+
+Nome: ${usuario.nome}
+Email: ${usuario.email}
+CPF: ${usuario.cpf}
+Endereço: ${usuario.endereco}
+Status: (coloque o status que quiser)
+    `;
+
+    await bot.sendMessage(chatId!, detalhes, { parse_mode: 'Markdown' });
+    await bot.answerCallbackQuery(query.id);
+  }
+});
 // 14. Confirma início do bot no console do servidor
 console.log('🤖 Bot iniciado!');
