@@ -1,4 +1,4 @@
-import { inserirEdital, buscarEditalPorLink, buscarEditaisBanco } from '../db';
+import { inserirEdital, buscarEditalPorLink, buscarEditaisBanco} from '../db';
 
 export interface Edital {
   titulo: string;
@@ -20,9 +20,5 @@ export async function salvarEditalSeNovo(edital: Edital): Promise<void> {
   }
 }
 
-// (Opcional) Buscar edital por matrícula, caso queira usar esse campo como filtro único
-// Implemente a função buscarEditalPorMatriculaNoBanco no db.ts se quiser ativar isso
-export async function buscarEditalPorMatricula(matricula: string): Promise<Edital | null> {
-  // return await buscarEditalPorMatriculaNoBanco(matricula);
-  return null; // Placeholder, até implementar a busca por matrícula
-}
+
+

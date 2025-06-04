@@ -140,6 +140,9 @@ export async function inserirEdital(edital: { titulo: string; link: string; data
   );
 }
 
+
+
+
 export async function buscarUsuariosPainelAdmin() {
   const [usuarios] = await pool.query("SELECT * FROM usuarios") as [any[], any];
   const [statusRows] = await pool.query(`
