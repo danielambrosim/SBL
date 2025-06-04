@@ -11,10 +11,8 @@ export const pool = mysql.createPool({
   password: process.env.DATABASE_PASSWORD || '',
   database: process.env.DATABASE_NAME || 'sbl_v2',
   port: Number(process.env.DATABASE_PORT) || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
 });
+
 
 // --- TIPOS ---
 export interface Usuario {
@@ -202,6 +200,3 @@ export async function buscarUsuariosNoBanco(): Promise<Usuario[]> {
   const [rows] = await pool.query('SELECT * FROM usuarios');
   return rows as Usuario[];
 }
-
-// --- OPCIONAL: CONEXÃO DIRETA ---
-export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
