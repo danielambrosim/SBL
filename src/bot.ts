@@ -1,5 +1,6 @@
-import TelegramBot, { Message } from 'node-telegram-bot-api';
+import TelegramBot, { Message, ParseMode  } from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
+import { atualizarStatusUsuarioNoBanco } from './db'; // ajuste o caminho
 
 // 1. Carregando variáveis do arquivo .env (sempre no topo)
 dotenv.config();
@@ -7,6 +8,7 @@ dotenv.config();
 // 2. Sessões globais (usadas para acompanhar o progresso de cada usuário nos fluxos)
 export const userSessions = new Map<number, any>();
 export const loggedInUsers = new Map<number, number>();
+
 
 // 3. Importando os handlers dos fluxos
 import { HandlersCadastro } from './handlers/cadastro';
@@ -55,7 +57,7 @@ export const bot = new TelegramBot(token, { polling: true });
 })();
 
 // 6. ID do admin para comandos restritos (puxado do .env)
-const ADMIN_CHAT_ID = Number(process.env.ADMIN_CHAT_ID);
+export const ADMIN_CHAT_ID = Number(process.env.ADMIN_CHAT_ID);
 
 // 7. Comando secreto /syncsites (só admin pode usar para garantir que todo usuário tem status em todo site)
 bot.onText(/\/syncsites/, async (msg) => {
@@ -225,6 +227,53 @@ bot.onText(/\/ajuda/, (msg) => {
 });
 
 
+// Exemplo no topo do arquivo bot.ts (ou logo após inicialização do bot)
+export async function notificarCadastroAdmin(usuario: {
+  id: number;
+  nome: string;
+  email: string;
+  cpf: string;
+  endereco: string;
+  chat_id: number;
+  // outros campos se precisar
+}) {
+  const mensagem = `
+📢 *Novo cadastro recebido*
+
+Nome: ${usuario.nome}
+Email: ${usuario.email}
+CPF: ${usuario.cpf}
+Endereço: ${usuario.endereco}
+Chat ID: ${usuario.chat_id}
+  `;
+
+  await bot.sendMessage(ADMIN_CHAT_ID, mensagem, { parse_mode: 'Markdown' });
+}
+
+bot.on('callback_query', async (query) => {
+  if (!query.data) return;
+
+  const [acao, userIdStr, novoStatus] = query.data.split(':');
+  if (acao !== 'status') return;
+
+  const chatId = query.message?.chat.id;
+  if (chatId !== Number(process.env.ADMIN_CHAT_ID)) {
+    await bot.answerCallbackQuery(query.id, { text: 'Acesso negado', show_alert: true });
+    return;
+  }
+
+  const userId = Number(userIdStr);
+
+  try {
+    await atualizarStatusUsuarioNoBanco(userId, novoStatus as 'ativo' | 'pendente' | 'recusado');
+    await bot.sendMessage(chatId!, `Status do usuário ${userId} atualizado para: ${novoStatus}`);
+    await bot.answerCallbackQuery(query.id);
+  } catch {
+    await bot.sendMessage(chatId!, 'Erro ao atualizar status do usuário.');
+    await bot.answerCallbackQuery(query.id);
+  }
+});
+
 bot.on('callback_query', async (query) => {
   const chatId = query.message?.chat.id;
   const data = query.data;
@@ -273,7 +322,6 @@ bot.onText(/\/editais/, async (msg) => {
     await bot.sendMessage(chatId, 'Nenhum edital disponível no momento.');
   }
 });
-
 
 // 14. Confirma início do bot no console do servidor
 console.log('🤖 Bot iniciado!');

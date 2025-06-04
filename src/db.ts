@@ -168,5 +168,11 @@ export async function buscarUsuariosPainelAdmin() {
 }
 
 
+export async function atualizarStatusUsuarioNoBanco(usuarioId: number, status: 'ativo' | 'pendente' | 'recusado') {
+  const sql = `UPDATE status_site_usuario SET status = ? WHERE usuario_id = ?`;
+  await pool.execute(sql, [status, usuarioId]);
+}
+
+
 // --- OPCIONAL: CONEXÃO DIRETA ---
 export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });

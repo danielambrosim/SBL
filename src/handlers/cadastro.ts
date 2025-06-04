@@ -1,9 +1,10 @@
-import { bot, userSessions } from '../bot';
+import { bot, userSessions,  notificarCadastroAdmin } from '../bot';
 import { validarEmail, validarCPF, validarCNPJ, validarSenha } from '../utils/validacao';
 import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorChatId } from '../db';
 import { enviarCodigo } from '../utils/mail';
 import { Message } from 'node-telegram-bot-api';
 import termoAceitacao from '../termos/aceitacaoGeral';
+import { ADMIN_CHAT_ID } from '../bot';
 
 interface CadastroState {
   etapa: number;
@@ -177,18 +178,48 @@ export const HandlersCadastro = {
           return;
         }
 
-        // Finaliza cadastro e salva usuário
-        const usuarioId = await salvarUsuario({
-          nome: session.nome!,
-          email: session.email!,
-          cpf: session.cpf!,
-          cnpj: session.cnpj,
-          senha: session.senha!,
-          endereco: session.endereco!,
-          chat_id: chatId,
-          imagem_doc_id: session.imagem_doc_id,
-          comprovante_residencia_id: session.comprovante_residencia_id
-        });
+// Finaliza cadastro e salva usuário
+const usuarioId = await salvarUsuario({
+  nome: session.nome!,
+  email: session.email!,
+  cpf: session.cpf!,
+  cnpj: session.cnpj,
+  senha: session.senha!,
+  endereco: session.endereco!,
+  chat_id: chatId,
+  imagem_doc_id: session.imagem_doc_id,
+  comprovante_residencia_id: session.comprovante_residencia_id
+});
+
+// Monta o objeto usuário salvo (você pode adaptar para buscar todos dados se precisar)
+const usuarioSalvo = {
+  id: usuarioId,
+  nome: session.nome!,
+  email: session.email!,
+  cpf: session.cpf!,
+  endereco: session.endereco!,
+  chat_id: chatId
+  // Adicione mais campos se quiser
+};
+
+// Função para enviar mensagem ao admin com dados do usuário
+async function notificarCadastroAdmin(usuario: typeof usuarioSalvo) {
+  const mensagem = `
+📢 *Novo cadastro recebido*
+
+Nome: ${usuario.nome}
+Email: ${usuario.email}
+CPF: ${usuario.cpf}
+Endereço: ${usuario.endereco}
+Chat ID: ${usuario.chat_id}
+  `;
+
+  await bot.sendMessage(ADMIN_CHAT_ID, mensagem, { parse_mode: 'Markdown' });
+}
+
+// Agora avisa o admin
+await notificarCadastroAdmin(usuarioSalvo);
+
         // Para cada site, status "pendente"
         const sites = await listarSites();
         for (const site of sites) {
