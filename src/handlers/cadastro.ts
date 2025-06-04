@@ -1,4 +1,4 @@
-import { bot, userSessions,  notificarCadastroAdmin } from '../bot';
+import { bot, userSessions } from '../bot';
 import { validarEmail, validarCPF, validarCNPJ, validarSenha } from '../utils/validacao';
 import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorChatId } from '../db';
 import { enviarCodigo } from '../utils/mail';
