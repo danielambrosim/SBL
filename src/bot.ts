@@ -19,13 +19,9 @@ import { HandlersCadastro } from './handlers/cadastro';
 import { HandlersLogin, loginSessions } from './handlers/login';
 import { HandlersStatus } from './handlers/status';
 import { HandlersAdicionais } from './handlers/adicionais';
-// Importando serviços para busca de editais e sites do banco
-import { listarEditais as listarEditaisService } from './services/edital';
-import { listarEditais } from './services/edital'; // ajuste o caminho
-import type { Edital } from './services/edital'; // ou o caminho do seu arquivo de tipos
-import type { Edital } from '../types/edital';
 import { listarSites, atualizarStatusUsuariosNovosSites } from './db';
 import { pool as connection } from './db';
+
 // Importando serviços para enviar os dados do cadastros para os sites de leilões
 import { exportarUsuariosParaCSV } from './utils/exportarUsuarios';
 
@@ -115,89 +111,86 @@ const COMANDOS_MENU: { [key: string]: (chatId: number) => Promise<any> } = {
 };
 
 // 10. Handler de botões INLINE (callback_query) — usado para buscar editais ao clicar em um site
+function listarEditaisDiretoDaPasta(site?: string): { nome: string; url: string }[] {
+  const basePath = site
+    ? path.join(__dirname, 'pdfs', site)
+    : path.join(__dirname, 'pdfs');
+  if (!fs.existsSync(basePath)) return [];
+  return fs.readdirSync(basePath)
+    .filter(file => file.endsWith('.pdf'))
+    .map(file => ({
+      nome: file,
+      url: site ? `/pdfs/${site}/${file}` : `/pdfs/${file}`,
+    }));
+}
+
+// Handler único:
 bot.on('callback_query', async (query) => {
   const chatId = query.message?.chat.id;
   const data = query.data;
 
-  if (data?.startsWith('edital_')) {
-    const siteId = Number(data.replace('edital_', ''));
-    const sites = await listarSites();
-    const site = sites.find(s => s.id === siteId);
-
-    if (!site) {
-      await bot.sendMessage(chatId!, 'Site de leilão não encontrado.');
-      return;
-    }
-
-    await bot.sendMessage(chatId!, `🔎 Buscando editais em: *${site.nome}*...`, { parse_mode: 'Markdown' });
-
-    // Busca do banco (não do scraping) -- ajustar para filtrar por site se desejar!
-    const editais = await listarEditaisService(10);
-
-    if (!editais.length) {
-      await bot.sendMessage(chatId!, 'Nenhum edital encontrado neste site.');
-      return;
-    }
-
-    // Monta mensagem com os links dos editais encontrados
-    let mensagem = `*Editais encontrados em ${site.nome}:*\n\n`;
-    for (const edital of editais) {
-      mensagem += `• [${edital.titulo}](${edital.id})\n`;
-    }
-    await bot.sendMessage(chatId!, mensagem, { parse_mode: 'Markdown', disable_web_page_preview: true });
-  }
-
-  if (query.id) {
+  if (!chatId || !data) {
     await bot.answerCallbackQuery(query.id);
-  }
-});
-// --- Handler para o comando /editais ---
-bot.onText(/\/editais/, async (msg) => {
-  const chatId = msg.chat.id;
-  const editais: Edital[] = await listarEditais();
-
-  if (!editais.length) {
-    await bot.sendMessage(chatId, 'Nenhum edital disponível no momento.');
     return;
   }
 
-  const keyboard = editais.map((edital: Edital) => ([{
-    text: edital.titulo,
-    callback_data: `pdfedital_${edital.id}`
-  }]));
+  // --- Clique em um site ---
+  if (data.startsWith('site_')) {
+    const site = data.replace('site_', '');
+    const editais = listarEditaisDiretoDaPasta(site);
 
-  await bot.sendMessage(chatId, '📑 *Editais disponíveis:*\nClique para receber o PDF:', {
-    parse_mode: 'Markdown',
-    reply_markup: { inline_keyboard: keyboard }
-  });
-});
-
-
-// --- Handler ÚNICO para todos os botões INLINE ---
-bot.on('callback_query', async (query) => {
-  if (!query.data) return;
-  const chatId = query.message?.chat.id;
-  const data = query.data;
-
-  // Envia PDF do edital
-  if (data.startsWith('pdfedital_')) {
-    const editalId = Number(data.replace('pdfedital_', ''));
-    const editais = await listarEditais();
-    const edital = editais.find(e => e.id === editalId);
-
-    if (!edital) {
-      await bot.sendMessage(chatId!, 'Edital não encontrado.');
+    if (!editais.length) {
+      await bot.sendMessage(chatId, 'Nenhum edital disponível para este site.');
       await bot.answerCallbackQuery(query.id);
       return;
     }
 
-    const pdfPath = path.join(__dirname, edital.url_pdf);
+    // Gera botões para cada edital do site
+    const keyboard = editais.map(e => ([{
+      text: e.nome,
+      callback_data: `pdf_${site}_${encodeURIComponent(e.nome)}`
+    }]));
+
+    await bot.sendMessage(
+      chatId,
+      `*Editais disponíveis para o site ${site}:*`,
+      { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } }
+    );
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+
+  // --- Clique no PDF ---
+  if (data.startsWith('pdf_')) {
+    // Exemplo: pdf_nomeSite_nomeDoArquivo.pdf
+    const regex = /^pdf_([^_]+)_(.+)$/;
+    const match = data.match(regex);
+    if (!match) {
+      await bot.sendMessage(chatId, 'Parâmetro inválido.');
+      await bot.answerCallbackQuery(query.id);
+      return;
+    }
+    const site = match[1];
+    const arquivo = decodeURIComponent(match[2]);
+    const pdfPath = path.join(__dirname, 'pdfs', site, arquivo);
 
     if (fs.existsSync(pdfPath)) {
-      await bot.sendDocument(chatId!, pdfPath, { caption: edital.titulo });
+      await bot.sendDocument(chatId, pdfPath, { caption: arquivo });
     } else {
-      await bot.sendMessage(chatId!, 'PDF não encontrado.');
+      await bot.sendMessage(chatId, 'PDF não encontrado.');
     }
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+
+  await bot.answerCallbackQuery(query.id);
+});
+
+bot.on('callback_query', async (query) => {
+  const chatId = query.message?.chat.id;
+  const data = query.data;
+
+  if (!chatId || !data) {
     await bot.answerCallbackQuery(query.id);
     return;
   }
@@ -213,26 +206,27 @@ bot.on('callback_query', async (query) => {
       const userId = Number(userIdStr);
       try {
         await atualizarStatusUsuarioNoBanco(userId, novoStatus as 'ativo' | 'pendente' | 'recusado');
-        await bot.sendMessage(chatId!, `Status do usuário ${userId} atualizado para: ${novoStatus}`);
-        await bot.answerCallbackQuery(query.id);
+        await bot.sendMessage(chatId, `Status do usuário ${userId} atualizado para: ${novoStatus}`);
       } catch {
-        await bot.sendMessage(chatId!, 'Erro ao atualizar status do usuário.');
-        await bot.answerCallbackQuery(query.id);
+        await bot.sendMessage(chatId, 'Erro ao atualizar status do usuário.');
       }
+      await bot.answerCallbackQuery(query.id);
       return;
     }
   }
 
   // Seleção de usuário (admin)
   if (data.startsWith('usuario_')) {
-    if (chatId !== Number(process.env.ADMIN_CHAT_ID)) return; // só admin pode acessar
-
+    if (chatId !== Number(process.env.ADMIN_CHAT_ID)) {
+      await bot.answerCallbackQuery(query.id, { text: 'Acesso negado', show_alert: true });
+      return;
+    }
     const userId = Number(data.split('_')[1]);
     const usuarios = await buscarUsuariosNoBanco();
     const usuario = usuarios.find(u => u.id === userId);
 
     if (!usuario) {
-      await bot.sendMessage(chatId!, "Usuário não encontrado.");
+      await bot.sendMessage(chatId, "Usuário não encontrado.");
       await bot.answerCallbackQuery(query.id);
       return;
     }
@@ -247,7 +241,7 @@ Endereço: ${usuario.endereco}
 Status: (coloque o status que quiser)
     `;
 
-    await bot.sendMessage(chatId!, detalhes, { parse_mode: 'Markdown' });
+    await bot.sendMessage(chatId, detalhes, { parse_mode: 'Markdown' });
     await bot.answerCallbackQuery(query.id);
     return;
   }
@@ -259,27 +253,27 @@ Status: (coloque o status que quiser)
     const site = sites.find(s => s.id === siteId);
 
     if (!site) {
-      await bot.sendMessage(chatId!, 'Site de leilão não encontrado.');
+      await bot.sendMessage(chatId, 'Site de leilão não encontrado.');
       await bot.answerCallbackQuery(query.id);
       return;
     }
 
-    await bot.sendMessage(chatId!, `🔎 Buscando editais em: *${site.nome}*...`, { parse_mode: 'Markdown' });
+    await bot.sendMessage(chatId, `🔎 Buscando editais em: *${site.nome}*...`, { parse_mode: 'Markdown' });
 
     // Busca do banco (não do scraping) -- ajustar para filtrar por site se desejar!
-    const editais = await listarEditaisService(10);
+    const editais = listarEditaisDiretoDaPasta(site.nome);
 
     if (!editais.length) {
-      await bot.sendMessage(chatId!, 'Nenhum edital encontrado neste site.');
+      await bot.sendMessage(chatId, 'Nenhum edital encontrado neste site.');
       await bot.answerCallbackQuery(query.id);
       return;
     }
 
     let mensagem = `*Editais encontrados em ${site.nome}:*\n\n`;
     for (const edital of editais) {
-      mensagem += `• ${edital.titulo}\n`;
-    }
-    await bot.sendMessage(chatId!, mensagem, { parse_mode: 'Markdown', disable_web_page_preview: true });
+    mensagem += `• ${edital.nome}\n`;
+  }
+    await bot.sendMessage(chatId, mensagem, { parse_mode: 'Markdown', disable_web_page_preview: true });
     await bot.answerCallbackQuery(query.id);
     return;
   }
@@ -287,7 +281,7 @@ Status: (coloque o status que quiser)
   // Botão de ajuda (exemplo)
   if (data.startsWith('ajuda_')) {
     const topic = data.replace('ajuda_', '');
-    await HandlersAdicionais.processarAjudaCallback(chatId!, topic);
+    await HandlersAdicionais.processarAjudaCallback(chatId, topic);
     await bot.answerCallbackQuery(query.id);
     return;
   }
@@ -295,6 +289,7 @@ Status: (coloque o status que quiser)
   // Responde qualquer outro callback para não travar
   await bot.answerCallbackQuery(query.id);
 });
+
 
 // 14. Confirma início do bot no console do servidor
 console.log('🤖 Bot iniciado!');
