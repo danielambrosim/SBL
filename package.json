@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "dist/bot.js",
   "scripts": {
-  "start": "ts-node src/bot.ts",
-  "dev": "ts-node src/bot.ts",
-  "test": "echo \"Error: no test specified\" && exit 1"
-},
+    "start": "ts-node src/bot.ts",
+    "dev": "ts-node src/bot.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -22,7 +22,8 @@
     "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^7.0.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "sbl": "file:"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

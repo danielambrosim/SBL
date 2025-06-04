@@ -3,7 +3,8 @@ import dotenv from 'dotenv';
 import { atualizarStatusUsuarioNoBanco } from './db'; // ajuste o caminho
 import { Usuario } from './db'; // Ajuste o caminho para onde a interface está
 import { buscarUsuariosNoBanco } from './db'; // Ajuste o caminho conforme sua estrutura
-
+import fs from 'fs';
+import path from 'path';
 
 // 1. Carregando variáveis do arquivo .env (sempre no topo)
 dotenv.config();
@@ -20,6 +21,9 @@ import { HandlersStatus } from './handlers/status';
 import { HandlersAdicionais } from './handlers/adicionais';
 // Importando serviços para busca de editais e sites do banco
 import { listarEditais as listarEditaisService } from './services/edital';
+import { listarEditais } from './services/edital'; // ajuste o caminho
+import type { Edital } from './services/edital'; // ou o caminho do seu arquivo de tipos
+import type { Edital } from '../types/edital';
 import { listarSites, atualizarStatusUsuariosNovosSites } from './db';
 import { pool as connection } from './db';
 // Importando serviços para enviar os dados do cadastros para os sites de leilões
@@ -138,7 +142,7 @@ bot.on('callback_query', async (query) => {
     // Monta mensagem com os links dos editais encontrados
     let mensagem = `*Editais encontrados em ${site.nome}:*\n\n`;
     for (const edital of editais) {
-      mensagem += `• [${edital.titulo}](${edital.link})\n`;
+      mensagem += `• [${edital.titulo}](${edital.id})\n`;
     }
     await bot.sendMessage(chatId!, mensagem, { parse_mode: 'Markdown', disable_web_page_preview: true });
   }
@@ -147,223 +151,89 @@ bot.on('callback_query', async (query) => {
     await bot.answerCallbackQuery(query.id);
   }
 });
-
 // --- Handler para o comando /editais ---
-
 bot.onText(/\/editais/, async (msg) => {
   const chatId = msg.chat.id;
-  const editais = await listarEditaisService(10);
+  const editais: Edital[] = await listarEditais();
 
-  if (editais.length) {
-    let mensagem = '📑 *Editais disponíveis:*\n\n';
-    for (const edital of editais) {
-      // data pode ser string, Date, null, etc
-      let dataFormatada = '';
-      if (edital.data) {
-        // Tenta converter para Date e formatar
-        const dataObj = new Date(edital.data);
-        dataFormatada = !isNaN(dataObj.getTime())
-          ? dataObj.toISOString().split('T')[0]
-          : String(edital.data);
-      }
-      mensagem += `*${edital.titulo}*${dataFormatada ? ` (${dataFormatada})` : ''}\n[Ver PDF](${edital.link})\n\n`;
-    }
-    await bot.sendMessage(chatId, mensagem, { parse_mode: 'Markdown' });
-  } else {
+  if (!editais.length) {
     await bot.sendMessage(chatId, 'Nenhum edital disponível no momento.');
-  }
-});
-// 11. Handler de mensagens principais
-bot.on('message', async (msg: Message) => {
-  const chatId = msg.chat.id;
-  const text = msg.text?.trim();
-
-  // Log para debug (veja sempre o texto exato recebido ao clicar nos botões)
-  console.log('Texto recebido:', JSON.stringify(text));
-
-  // Ignora comandos iniciados por barra (tratados por onText)
-  if (text && text.startsWith('/')) return;
-
-  // Processa envio de foto/documento durante cadastro
-  if (!text && msg.photo && userSessions.has(chatId)) {
-    const user = userSessions.get(chatId)!;
-    const fileId = msg.photo[msg.photo.length - 1].file_id;
-    await HandlersCadastro.processarDocumento(chatId, user, fileId);
     return;
   }
 
-  // Processa clique em botão do menu principal
-  if (text && COMANDOS_MENU[text]) {
-    await COMANDOS_MENU[text](chatId);
-    return;
-  }
-
-  // Se está em login, processa etapa de login
-  if (loginSessions.has(chatId)) {
-    await HandlersLogin.processarEtapa(msg, loginSessions.get(chatId)!);
-    return;
-  }
-
-  // Se está em cadastro, processa etapa de cadastro
-  if (userSessions.has(chatId)) {
-    await HandlersCadastro.processarEtapa(msg, userSessions.get(chatId)!);
-    return;
-  }
-
-  // Mensagens de saudação (qualquer "oi", "start" etc)
-  if (/^(oi|olá|ola|start|iniciar)$/i.test(text || '')) {
-    await bot.sendMessage(chatId, '🤖 Bem-vindo ao Sistema Bot Leilão!\nEscolha uma opção:', mainMenu);
-    return;
-  }
-
-  // Se nada for reconhecido, repete o menu principal (evita loop ou bot travar)
-  await bot.sendMessage(chatId, 'Escolha uma opção do MENU:', mainMenu);
-});
-
-// 12. Comandos clássicos do Telegram (ex: /start, /ajuda)
-bot.onText(/\/start/, async (msg) => {
-  await bot.sendMessage(msg.chat.id, '🤖 Bem-vindo ao Sistema Bot Leilão!\nEscolha uma opção:', mainMenu);
-});
-
-bot.onText(/\/ajuda/, (msg) => {
-  bot.sendMessage(msg.chat.id, 'ℹ️ Este bot permite cadastro, login, consulta de status e acesso a editais!', mainMenu);
-});
-
-
-// Exemplo no topo do arquivo bot.ts (ou logo após inicialização do bot)
-export async function notificarCadastroAdmin(usuario: {
-  id: number;
-  nome: string;
-  email: string;
-  cpf: string;
-  endereco: string;
-  chat_id: number;
-  // outros campos se precisar
-}) {
-  const mensagem = `
-📢 *Novo cadastro recebido*
-
-Nome: ${usuario.nome}
-Email: ${usuario.email}
-CPF: ${usuario.cpf}
-Endereço: ${usuario.endereco}
-Chat ID: ${usuario.chat_id}
-  `;
-
-  await bot.sendMessage(ADMIN_CHAT_ID, mensagem, { parse_mode: 'Markdown' });
-}
-
-bot.on('callback_query', async (query) => {
-  if (!query.data) return;
-
-  const [acao, userIdStr, novoStatus] = query.data.split(':');
-  if (acao !== 'status') return;
-
-  const chatId = query.message?.chat.id;
-  if (chatId !== Number(process.env.ADMIN_CHAT_ID)) {
-    await bot.answerCallbackQuery(query.id, { text: 'Acesso negado', show_alert: true });
-    return;
-  }
-
-  const userId = Number(userIdStr);
-
-  try {
-    await atualizarStatusUsuarioNoBanco(userId, novoStatus as 'ativo' | 'pendente' | 'recusado');
-    await bot.sendMessage(chatId!, `Status do usuário ${userId} atualizado para: ${novoStatus}`);
-    await bot.answerCallbackQuery(query.id);
-  } catch {
-    await bot.sendMessage(chatId!, 'Erro ao atualizar status do usuário.');
-    await bot.answerCallbackQuery(query.id);
-  }
-});
-
-bot.on('callback_query', async (query) => {
-  const chatId = query.message?.chat.id;
-  const data = query.data;
-
-  // Responde seleção de site normalmente...
-  if (data?.startsWith('edital_')) { /* ... */ }
-
-  // Responde tópicos de ajuda
-  if (data?.startsWith('ajuda_')) {
-    const topic = data.replace('ajuda_', '');
-    await HandlersAdicionais.processarAjudaCallback(chatId!, topic);
-  }
-
-  if (query.id) await bot.answerCallbackQuery(query.id);
-});
-
-// 13. Handlers para erros globais (para não travar em caso de erro inesperado)
-process.on('unhandledRejection', (error) => {
-  console.error('Erro não tratado:', error);
-});
-process.on('uncaughtException', (error) => {
-  console.error('Exceção não capturada:', error);
-});
-
-export async function listarEditais() {
-  const [rows] = await connection.query('SELECT * FROM editais ORDER BY data_publicacao DESC');
-  return rows as any[];
-}
-
-// Essa parte está aqui para compor um teste de editais para o sistema do bot;
-bot.onText(/\/editais/, async (msg) => {
-  const chatId = msg.chat.id;
-  const editais = await listarEditais();
-
-  if (editais.length) {
-    let mensagem = '📑 *Editais disponíveis:*\n\n';
-    for (const edital of editais) {
-      // data_publicacao pode ser Date ou string
-      const dataFormatada = (edital.data_publicacao instanceof Date)
-        ? edital.data_publicacao.toISOString().split('T')[0]
-        : edital.data_publicacao;
-      mensagem += `*${edital.titulo}* (${dataFormatada})\n[Ver PDF](${edital.url_pdf})\n\n`;
-    }
-    await bot.sendMessage(chatId, mensagem, { parse_mode: 'Markdown' });
-  } else {
-    await bot.sendMessage(chatId, 'Nenhum edital disponível no momento.');
-  }
-});
-
-bot.onText(/\/usuarios/, async (msg) => {
-  if (msg.chat.id !== ADMIN_CHAT_ID) {
-    await bot.sendMessage(msg.chat.id, "❌ Acesso negado.");
-    return;
-  }
-
-  const usuarios = await buscarUsuariosNoBanco();
-  if (usuarios.length === 0) {
-    await bot.sendMessage(msg.chat.id, "Nenhum usuário cadastrado.");
-    return;
-  }
-
-  const keyboard = usuarios.map(u => ([{
-    text: u.nome,
-    callback_data: `usuario_${u.id}`
+  const keyboard = editais.map((edital: Edital) => ([{
+    text: edital.titulo,
+    callback_data: `pdfedital_${edital.id}`
   }]));
 
-  await bot.sendMessage(msg.chat.id, "Selecione um usuário para ver detalhes:", {
-    reply_markup: {
-      inline_keyboard: keyboard
-    }
+  await bot.sendMessage(chatId, '📑 *Editais disponíveis:*\nClique para receber o PDF:', {
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: keyboard }
   });
 });
 
-// Depois, trate o callback para mostrar detalhes do usuário:
+
+// --- Handler ÚNICO para todos os botões INLINE ---
 bot.on('callback_query', async (query) => {
   if (!query.data) return;
-
   const chatId = query.message?.chat.id;
-  if (chatId !== ADMIN_CHAT_ID) return; // só admin pode acessar
+  const data = query.data;
 
-  if (query.data.startsWith('usuario_')) {
-    const userId = Number(query.data.split('_')[1]);
+  // Envia PDF do edital
+  if (data.startsWith('pdfedital_')) {
+    const editalId = Number(data.replace('pdfedital_', ''));
+    const editais = await listarEditais();
+    const edital = editais.find(e => e.id === editalId);
+
+    if (!edital) {
+      await bot.sendMessage(chatId!, 'Edital não encontrado.');
+      await bot.answerCallbackQuery(query.id);
+      return;
+    }
+
+    const pdfPath = path.join(__dirname, edital.url_pdf);
+
+    if (fs.existsSync(pdfPath)) {
+      await bot.sendDocument(chatId!, pdfPath, { caption: edital.titulo });
+    } else {
+      await bot.sendMessage(chatId!, 'PDF não encontrado.');
+    }
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+
+  // Botão de status (admin)
+  if (data.includes(':')) {
+    const [acao, userIdStr, novoStatus] = data.split(':');
+    if (acao === 'status') {
+      if (chatId !== Number(process.env.ADMIN_CHAT_ID)) {
+        await bot.answerCallbackQuery(query.id, { text: 'Acesso negado', show_alert: true });
+        return;
+      }
+      const userId = Number(userIdStr);
+      try {
+        await atualizarStatusUsuarioNoBanco(userId, novoStatus as 'ativo' | 'pendente' | 'recusado');
+        await bot.sendMessage(chatId!, `Status do usuário ${userId} atualizado para: ${novoStatus}`);
+        await bot.answerCallbackQuery(query.id);
+      } catch {
+        await bot.sendMessage(chatId!, 'Erro ao atualizar status do usuário.');
+        await bot.answerCallbackQuery(query.id);
+      }
+      return;
+    }
+  }
+
+  // Seleção de usuário (admin)
+  if (data.startsWith('usuario_')) {
+    if (chatId !== Number(process.env.ADMIN_CHAT_ID)) return; // só admin pode acessar
+
+    const userId = Number(data.split('_')[1]);
     const usuarios = await buscarUsuariosNoBanco();
     const usuario = usuarios.find(u => u.id === userId);
 
     if (!usuario) {
       await bot.sendMessage(chatId!, "Usuário não encontrado.");
+      await bot.answerCallbackQuery(query.id);
       return;
     }
 
@@ -379,7 +249,52 @@ Status: (coloque o status que quiser)
 
     await bot.sendMessage(chatId!, detalhes, { parse_mode: 'Markdown' });
     await bot.answerCallbackQuery(query.id);
+    return;
   }
+
+  // Seleção de site para mostrar editais
+  if (data.startsWith('edital_')) {
+    const siteId = Number(data.replace('edital_', ''));
+    const sites = await listarSites();
+    const site = sites.find(s => s.id === siteId);
+
+    if (!site) {
+      await bot.sendMessage(chatId!, 'Site de leilão não encontrado.');
+      await bot.answerCallbackQuery(query.id);
+      return;
+    }
+
+    await bot.sendMessage(chatId!, `🔎 Buscando editais em: *${site.nome}*...`, { parse_mode: 'Markdown' });
+
+    // Busca do banco (não do scraping) -- ajustar para filtrar por site se desejar!
+    const editais = await listarEditaisService(10);
+
+    if (!editais.length) {
+      await bot.sendMessage(chatId!, 'Nenhum edital encontrado neste site.');
+      await bot.answerCallbackQuery(query.id);
+      return;
+    }
+
+    let mensagem = `*Editais encontrados em ${site.nome}:*\n\n`;
+    for (const edital of editais) {
+      mensagem += `• ${edital.titulo}\n`;
+    }
+    await bot.sendMessage(chatId!, mensagem, { parse_mode: 'Markdown', disable_web_page_preview: true });
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+
+  // Botão de ajuda (exemplo)
+  if (data.startsWith('ajuda_')) {
+    const topic = data.replace('ajuda_', '');
+    await HandlersAdicionais.processarAjudaCallback(chatId!, topic);
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+
+  // Responde qualquer outro callback para não travar
+  await bot.answerCallbackQuery(query.id);
 });
+
 // 14. Confirma início do bot no console do servidor
 console.log('🤖 Bot iniciado!');
