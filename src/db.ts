@@ -141,29 +141,29 @@ export async function inserirEdital(edital: { titulo: string; link: string; data
 }
 
 export async function buscarUsuariosPainelAdmin() {
-  // 1. Busca todos os usuários
-  const [usuarios] = await pool.query("SELECT * FROM usuarios");
+  const [usuarios] = await pool.query("SELECT * FROM usuarios") as [any[], any];
+  const [statusRows] = await pool.query(`
+    SELECT su.usuario_id, su.site_id, su.status, s.nome 
+    FROM status_site_usuario su 
+    JOIN sites_leilao s ON su.site_id = s.id
+  `) as [any[], any];
 
-  // 2. Busca status dos usuários em sites + nome do site
- const [statusRows] = await pool.query(`
-  SELECT su.usuario_id, su.site_id, su.status, s.nome 
-  FROM status_site_usuario su 
-  JOIN sites_leilao s ON su.site_id = s.id
-`) as [any[], any]; // <-- importante
-
-// e depois usa statusRows.filter(...)
-
-return (usuarios as any[]).map(u => ({
-  // ...
-  sites: statusRows
-    .filter((s: any) => s.usuario_id === u.id)
-    .map((s: any) => ({
-      id: s.site_id,
-      nome: s.nome,
-      status: s.status
-    }))
-}));
+  return usuarios.map(u => ({
+    id: u.id,
+    nome: u.nome,
+    email: u.email,
+    cpf: u.cpf,
+    endereco: u.endereco,
+    sites: statusRows
+      .filter(s => s.usuario_id === u.id)
+      .map(s => ({
+        id: s.site_id,
+        nome: s.nome,
+        status: s.status
+      }))
+  }));
 }
+
 
 // --- OPCIONAL: CONEXÃO DIRETA ---
 export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
