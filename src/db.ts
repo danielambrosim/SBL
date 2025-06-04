@@ -173,6 +173,10 @@ export async function atualizarStatusUsuarioNoBanco(usuarioId: number, status: '
   await pool.execute(sql, [status, usuarioId]);
 }
 
+export async function buscarUsuariosNoBanco() {
+  const [rows] = await pool.query("SELECT * FROM usuarios");
+  return rows;
+}
 
 // --- OPCIONAL: CONEXÃO DIRETA ---
 export const connectionPromise = mysql.createConnection({ /* use apenas se realmente precisar */ });
