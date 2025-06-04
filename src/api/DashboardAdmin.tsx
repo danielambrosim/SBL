@@ -1,4 +1,3 @@
-// src/DashboardAdmin.tsx
 import React, { useEffect, useState } from "react";
 import "./DashboardAdmin.css";
 
