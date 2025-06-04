@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
-
+import { Edital as EditalType } from './types/edital';
 
 dotenv.config();
 
@@ -48,6 +48,8 @@ export interface StatusSiteUsuario {
 }
 
 export type Edital = { titulo: string; link: string; data?: string };
+
+
 
 // --- USUÁRIOS ---
 export async function salvarUsuario(usuario: Usuario): Promise<number> {
@@ -119,30 +121,60 @@ export async function atualizarStatusUsuariosNovosSites() {
 }
 
 // --- EDITAIS ---
-export async function buscarEditaisBanco(qtd: number = 5): Promise<Edital[]> {
+export async function buscarEditaisBanco(qtd: number): Promise<Edital[]> {
   const [rows] = await pool.query(
-    'SELECT titulo, url_pdf as link, data_publicacao as data FROM editais ORDER BY data_publicacao DESC LIMIT ?', [qtd]
-  ) as [any[], any];
-  return rows;
+    `SELECT 
+      id, 
+      titulo, 
+      url_pdf, 
+      data_publicacao,
+      url_pdf as link,
+      data_publicacao as data
+    FROM editais 
+    ORDER BY data_publicacao DESC 
+    LIMIT ?`, 
+    [qtd]
+  ) as [Edital[], any];
+  
+  return rows.map(row => ({
+    ...row,
+    // Garante que os campos principais existam
+    url_pdf: obj.url_pdf || "",
+    data_publicacao: row.data_publicacao || row.data
+  }));
 }
 
-export async function buscarEditalPorLink(link: string) {
-  const [rows]: any = await pool.execute(
-    'SELECT * FROM editais WHERE url_pdf = ? LIMIT 1', [link]
-  );
+export async function buscarEditalPorLink(url: string): Promise<Edital | null> {
+  const [rows] = await pool.query(
+    `SELECT 
+      id, 
+      titulo, 
+      url_pdf, 
+      data_publicacao,
+      url_pdf as link,
+      data_publicacao as data
+    FROM editais 
+    WHERE url_pdf = ? 
+    LIMIT 1`, 
+    [url]
+  ) as [Edital[], any];
+
   return rows[0] || null;
 }
 
-export async function inserirEdital(edital: { titulo: string; link: string; data?: string; }) {
+export async function inserirEdital(edital: Edital): Promise<void> {
   await pool.execute(
     'INSERT INTO editais (titulo, url_pdf, data_publicacao) VALUES (?, ?, ?)',
-    [edital.titulo, edital.link, edital.data ?? null]
+    [
+      edital.titulo,
+      edital.url_pdf || edital.link!, // ! indica que sabemos que um dos dois existe
+      edital.data_publicacao || edital.data! || new Date().toISOString()
+    ]
   );
 }
 
 
-
-
+// --- PAINEL DO ADMIN ---
 export async function buscarUsuariosPainelAdmin() {
   const [usuarios] = await pool.query("SELECT * FROM usuarios") as [any[], any];
   const [statusRows] = await pool.query(`
