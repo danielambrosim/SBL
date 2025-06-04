@@ -23,10 +23,25 @@ import { exportarUsuariosParaCSV } from './utils/exportarUsuarios';
 import express from "express";
 import adminRouter from "./routes/admin";
 
+const app = express(); // 1º - Cria a instância
 
-const app = express();
-app.use(express.json());
+app.use(express.json()); // 2º - Configura middlewares
+
+// 3º - Usa as rotas
 app.use("/api/admin", adminRouter);
+
+// Se precisar de outras rotas, adicione aqui
+
+// 4º - Starta o servidor
+app.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
+});
+
+
+import usuariosRouter from "./api/admin/usuarios";
+app.use(express.json());
+app.use("/api/admin/usuarios", usuariosRouter);
+app.listen(3000, () => console.log("Servidor rodando!"));
 
 // 4. Inicializando o bot com o token do .env
 const token = process.env.TELEGRAM_TOKEN;

@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
+
 dotenv.config();
 
 // --- CONEXÃO ---
@@ -137,6 +138,31 @@ export async function inserirEdital(edital: { titulo: string; link: string; data
     'INSERT INTO editais (titulo, url_pdf, data_publicacao) VALUES (?, ?, ?)',
     [edital.titulo, edital.link, edital.data ?? null]
   );
+}
+
+export async function buscarUsuariosPainelAdmin() {
+  // 1. Busca todos os usuários
+  const [usuarios] = await pool.query("SELECT * FROM usuarios");
+
+  // 2. Busca status dos usuários em sites + nome do site
+ const [statusRows] = await pool.query(`
+  SELECT su.usuario_id, su.site_id, su.status, s.nome 
+  FROM status_site_usuario su 
+  JOIN sites_leilao s ON su.site_id = s.id
+`) as [any[], any]; // <-- importante
+
+// e depois usa statusRows.filter(...)
+
+return (usuarios as any[]).map(u => ({
+  // ...
+  sites: statusRows
+    .filter((s: any) => s.usuario_id === u.id)
+    .map((s: any) => ({
+      id: s.site_id,
+      nome: s.nome,
+      status: s.status
+    }))
+}));
 }
 
 // --- OPCIONAL: CONEXÃO DIRETA ---
