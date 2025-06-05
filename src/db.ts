@@ -21,7 +21,7 @@ export interface Usuario {
   email: string;
   cpf: string;
   cnpj?: string;
-  senha: string;  // <--- Deixe opcional
+  senha?: string;  // <--- Deixe opcional
   endereco: string;
   chat_id: number;
   imagem_doc_id?: string;
@@ -54,6 +54,9 @@ export type Edital = {
 
 // --- USUÁRIOS ---
 export async function salvarUsuario(usuario: Usuario): Promise<number> {
+  if (!usuario.senha) {
+     throw new Error('Senha é obrigatória para cadastrar usuário.');
+     }
   const sql = `INSERT INTO usuarios
     (nome, email, cpf, cnpj, senha, endereco, chat_id, imagem_doc_id, comprovante_residencia_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;

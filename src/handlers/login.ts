@@ -42,12 +42,17 @@ export const HandlersLogin = {
           loginSessions.delete(chatId);
           return;
         }
-        const ok = await bcrypt.compare(text, usuario.senha);
-        if (!ok) {
-          await bot.sendMessage(chatId, 'Senha incorreta. Digite /start para tentar novamente.');
-          loginSessions.delete(chatId);
-          return;
-        }
+                  if (!usuario.senha) {
+            await bot.sendMessage(chatId, 'Não foi possível autenticar: usuário não possui senha cadastrada.');
+            loginSessions.delete(chatId);
+            return;
+          }
+          const ok = await bcrypt.compare(text, usuario.senha);
+          if (!ok) {
+            await bot.sendMessage(chatId, 'Senha incorreta. Digite /start para tentar novamente.');
+            loginSessions.delete(chatId);
+            return;
+          }
         loggedInUsers.set(chatId, usuario.id!);
         await bot.sendMessage(chatId, `Login realizado com sucesso! Bem-vindo, ${usuario.nome}.`);
         loginSessions.delete(chatId);
