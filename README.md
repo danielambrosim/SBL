@@ -17,8 +17,8 @@
 ## 🚀 Clone o projeto
 
 ```bash
-git clone https://github.com/seuusuario/bot-leilao.git
-cd bot-leilao
+git clone https://github.com/danielambrosim/SBL.git
+cd SBL
 
 # Instale as dependências
 npm install
