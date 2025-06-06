@@ -46,21 +46,24 @@ export const HandlersCadastro = {
     const text = msg.text?.trim();
 
     switch (etapa) {
-      case 0:
-        if (text === '✅ Aceito') {
-          session.etapa = 1;
-          await bot.sendMessage(chatId, 'Bem-vindo ao cadastro! Qual o seu nome completo?', {
-            reply_markup: { remove_keyboard: true }
-          });
-        } else if (text === '❌ Não aceito') {
-          await bot.sendMessage(chatId, 'Cadastro cancelado. Se quiser tentar novamente, escolha a opção de cadastro no menu.', {
-            reply_markup: { remove_keyboard: true }
-          });
-          userSessions.delete(chatId);
-        } else {
-          await bot.sendMessage(chatId, 'Por favor, responda usando "✅ Aceito" ou "❌ Não aceito".');
-        }
-        break;
+        case 0:
+          if (text === '✅ Aceito') {
+            session.etapa = 1;
+            userSessions.set(chatId, session); // <-- ESSENCIAL!
+            await bot.sendMessage(chatId, 'Bem-vindo ao cadastro! Qual o seu nome completo?', {
+              reply_markup: { remove_keyboard: true }
+            });
+            return; // Recomendo usar para não executar mais nada depois
+          } else if (text === '❌ Não aceito') {
+            await bot.sendMessage(chatId, 'Cadastro cancelado. Se quiser tentar novamente, escolha a opção de cadastro no menu.', {
+              reply_markup: { remove_keyboard: true }
+            });
+            userSessions.delete(chatId);
+            return;
+          } else {
+            await bot.sendMessage(chatId, 'Por favor, responda usando "✅ Aceito" ou "❌ Não aceito".');
+            return;
+          }
 
       case 1:
         if (!text || text.length < 3) {
@@ -78,7 +81,6 @@ export const HandlersCadastro = {
           return;
         }
         session.email = text;
-        // Gerar código de confirmação
         const codigo = Math.floor(100000 + Math.random() * 900000).toString();
         session.codigo = codigo;
         await enviarCodigo(session.email, codigo);
@@ -139,12 +141,12 @@ export const HandlersCadastro = {
 
       case 8:
         await bot.sendMessage(chatId, 'Por favor, envie a foto do seu documento.');
-        // O tratamento do arquivo é feito por processarDocumento().
+        // Aqui você trata o arquivo na função processarDocumento().
         break;
 
       case 9:
         await bot.sendMessage(chatId, 'Por favor, envie a foto do seu comprovante de residência.');
-        // O tratamento do arquivo é feito por processarDocumento().
+        // Aqui você trata o arquivo na função processarDocumento().
         break;
 
       case 10:
@@ -170,7 +172,6 @@ export const HandlersCadastro = {
         }
         session.senhaConfirmacao = text;
 
-        // VERIFICA se já existe usuário com esse chat_id
         const usuarioExistente = await buscarUsuarioPorChatId(chatId);
         if (usuarioExistente) {
           await bot.sendMessage(chatId, 'Você já está cadastrado! Use /start para acessar o menu.');
@@ -178,61 +179,29 @@ export const HandlersCadastro = {
           return;
         }
 
-// Finaliza cadastro e salva usuário
-const usuarioId = await salvarUsuario({
-  nome: session.nome!,
-  email: session.email!,
-  cpf: session.cpf!,
-  cnpj: session.cnpj,
-  senha: session.senha!,
-  endereco: session.endereco!,
-  chat_id: chatId,
-  imagem_doc_id: session.imagem_doc_id,
-  comprovante_residencia_id: session.comprovante_residencia_id
-});
+        const usuarioId = await salvarUsuario({
+          nome: session.nome!,
+          email: session.email!,
+          cpf: session.cpf!,
+          cnpj: session.cnpj,
+          senha: session.senha!,
+          endereco: session.endereco!,
+          chat_id: chatId,
+          imagem_doc_id: session.imagem_doc_id,
+          comprovante_residencia_id: session.comprovante_residencia_id
+        });
 
-// Monta o objeto usuário salvo (você pode adaptar para buscar todos dados se precisar)
-const usuarioSalvo = {
-  id: usuarioId,
-  nome: session.nome!,
-  email: session.email!,
-  cpf: session.cpf!,
-  endereco: session.endereco!,
-  chat_id: chatId
-  // Adicione mais campos se quiser
-};
+        const usuarioSalvo = {
+          id: usuarioId,
+          nome: session.nome!,
+          email: session.email!,
+          cpf: session.cpf!,
+          endereco: session.endereco!,
+          chat_id: chatId
+          // Adicione mais campos se quiser
+        };
 
-// Função aceita qualquer objeto com os campos usados abaixo
-async function notificarCadastroAdmin(usuario: any, userId: number) {
-  const mensagemAdmin = `
-👤 *Novo cadastro realizado!*
-
-*Nome:* ${usuario.nome}
-*Email:* ${usuario.email}
-*CPF:* ${usuario.cpf}
-${usuario.cnpj ? `*CNPJ:* ${usuario.cnpj}\n` : ''}
-*Endereço:* ${usuario.endereco}
-*Chat ID:* ${usuario.chat_id}
-*Data do cadastro:* ${new Date().toLocaleString('pt-BR')}
-id no banco: ${userId}
-  `;
-
-  await bot.sendMessage(ADMIN_CHAT_ID, mensagemAdmin, { parse_mode: 'Markdown' });
-
-  // Se tiver arquivos:
-  if (usuario.imagem_doc_id) {
-    await bot.sendDocument(ADMIN_CHAT_ID, usuario.imagem_doc_id, { caption: 'Documento do usuário' });
-  }
-  if (usuario.comprovante_residencia_id) {
-    await bot.sendDocument(ADMIN_CHAT_ID, usuario.comprovante_residencia_id, { caption: 'Comprovante de residência' });
-  }
-}
-
-const userId = await salvarUsuario(usuarioSalvo);
-await notificarCadastroAdmin(usuarioSalvo, userId);
-
-
-        // Para cada site, status "pendente"
+       
         const sites = await listarSites();
         for (const site of sites) {
           await salvarStatusSiteUsuario(usuarioId, site.id, 'pendente');
@@ -246,20 +215,7 @@ await notificarCadastroAdmin(usuarioSalvo, userId);
         userSessions.delete(chatId);
         break;
     }
-    session.lastActivity = Date.now();
-    userSessions.set(chatId, session);
-  },
 
-  processarDocumento: async (chatId: number, session: CadastroState, fileId: string) => {
-    if (session.etapa === 8) {
-      session.imagem_doc_id = fileId;
-      session.etapa = 9;
-      await bot.sendMessage(chatId, 'Foto recebida! Agora envie a foto do comprovante de residência:');
-    } else if (session.etapa === 9) {
-      session.comprovante_residencia_id = fileId;
-      session.etapa = 10;
-      await bot.sendMessage(chatId, 'Comprovante recebido! Agora crie uma senha:');
-    }
     session.lastActivity = Date.now();
     userSessions.set(chatId, session);
   }
