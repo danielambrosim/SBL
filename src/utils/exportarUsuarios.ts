@@ -1,7 +1,8 @@
-// src/utils/exportarUsuarios.ts
 import { pool } from '../db';
 import fs from 'fs';
 import path from 'path';
+
+// NÃO faça: import { exportarUsuariosParaCSV } from './exportarUsuarios'; // Isso gera circularidade!!
 
 export async function exportarUsuariosParaCSV(): Promise<string> {
   const [rows]: any = await pool.query('SELECT * FROM usuarios');
