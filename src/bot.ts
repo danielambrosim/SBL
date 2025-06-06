@@ -143,8 +143,12 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const texto = msg.text?.trim();
 
-    // Se o usuário está em fluxo, deixa o handler cuidar!
-    if (userSessions.has(chatId)) return;
+    // Se o usuário está em fluxo de cadastro, chama o handler do cadastro!
+    const session = userSessions.get(chatId);
+    if (session) {
+      await HandlersCadastro.processarEtapa(msg, session);
+      return;
+    }
 
     if (texto && COMANDOS_MENU[texto]) {
       await COMANDOS_MENU[texto](chatId);
@@ -154,6 +158,21 @@ bot.on('message', async (msg) => {
   } catch (e) {
     console.error(e);
     await bot.sendMessage(msg.chat.id, 'Erro ao processar sua mensagem.');
+  }
+});
+
+bot.on('photo', async (msg) => {
+  const chatId = msg.chat.id;
+  const session = userSessions.get(chatId);
+  if (!session) return;
+
+  if (session.etapa === 8 || session.etapa === 9) {
+    if (msg.photo && msg.photo.length > 0) {
+      const fileId = msg.photo[msg.photo.length - 1].file_id;
+      await HandlersCadastro.processarDocumento(chatId, session, fileId);
+    } else {
+      await bot.sendMessage(chatId, 'Erro ao receber a foto. Tente novamente!');
+    }
   }
 });
 

@@ -5,7 +5,6 @@ import { enviarCodigo } from '../utils/mail';
 import { Message } from 'node-telegram-bot-api';
 import termoAceitacao from '../termos/aceitacaoGeral';
 
-
 interface CadastroState {
   etapa: number;
   nome?: string;
@@ -46,24 +45,24 @@ export const HandlersCadastro = {
     const text = msg.text?.trim();
 
     switch (etapa) {
-        case 0:
-          if (text === '✅ Aceito') {
-            session.etapa = 1;
-            userSessions.set(chatId, session); // <-- ESSENCIAL!
-            await bot.sendMessage(chatId, 'Bem-vindo ao cadastro! Qual o seu nome completo?', {
-              reply_markup: { remove_keyboard: true }
-            });
-            return; // Recomendo usar para não executar mais nada depois
-          } else if (text === '❌ Não aceito') {
-            await bot.sendMessage(chatId, 'Cadastro cancelado. Se quiser tentar novamente, escolha a opção de cadastro no menu.', {
-              reply_markup: { remove_keyboard: true }
-            });
-            userSessions.delete(chatId);
-            return;
-          } else {
-            await bot.sendMessage(chatId, 'Por favor, responda usando "✅ Aceito" ou "❌ Não aceito".');
-            return;
-          }
+      case 0:
+        if (text === '✅ Aceito') {
+          session.etapa = 1;
+          userSessions.set(chatId, session);
+          await bot.sendMessage(chatId, 'Bem-vindo ao cadastro! Qual o seu nome completo?', {
+            reply_markup: { remove_keyboard: true }
+          });
+          return;
+        } else if (text === '❌ Não aceito') {
+          await bot.sendMessage(chatId, 'Cadastro cancelado. Se quiser tentar novamente, escolha a opção de cadastro no menu.', {
+            reply_markup: { remove_keyboard: true }
+          });
+          userSessions.delete(chatId);
+          return;
+        } else {
+          await bot.sendMessage(chatId, 'Por favor, responda usando "✅ Aceito" ou "❌ Não aceito".');
+          return;
+        }
 
       case 1:
         if (!text || text.length < 3) {
@@ -140,13 +139,13 @@ export const HandlersCadastro = {
         break;
 
       case 8:
-        await bot.sendMessage(chatId, 'Por favor, envie a foto do seu documento.');
-        // Aqui você trata o arquivo na função processarDocumento().
+        if (msg.text) {
+          await bot.sendMessage(chatId, 'Por favor, envie uma foto, não texto!');
+        }
         break;
 
       case 9:
         await bot.sendMessage(chatId, 'Por favor, envie a foto do seu comprovante de residência.');
-        // Aqui você trata o arquivo na função processarDocumento().
         break;
 
       case 10:
@@ -198,10 +197,8 @@ export const HandlersCadastro = {
           cpf: session.cpf!,
           endereco: session.endereco!,
           chat_id: chatId
-          // Adicione mais campos se quiser
         };
 
-       
         const sites = await listarSites();
         for (const site of sites) {
           await salvarStatusSiteUsuario(usuarioId, site.id, 'pendente');
@@ -216,6 +213,20 @@ export const HandlersCadastro = {
         break;
     }
 
+    session.lastActivity = Date.now();
+    userSessions.set(chatId, session);
+  },
+
+  processarDocumento: async (chatId: number, session: CadastroState, fileId: string) => {
+    if (session.etapa === 8) {
+      session.imagem_doc_id = fileId;
+      session.etapa = 9;
+      await bot.sendMessage(chatId, 'Foto recebida! Agora envie a foto do comprovante de residência:');
+    } else if (session.etapa === 9) {
+      session.comprovante_residencia_id = fileId;
+      session.etapa = 10;
+      await bot.sendMessage(chatId, 'Comprovante recebido! Agora crie uma senha:');
+    }
     session.lastActivity = Date.now();
     userSessions.set(chatId, session);
   }
