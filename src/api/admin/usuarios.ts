@@ -4,7 +4,7 @@ import { buscarUsuariosNoBanco } from "../../db";  // ajuste o caminho correto p
 const router = Router();
 
 // GET /api/admin/usuarios
-router.get("/", async (req, res) => {
+router.get("/handlers/cadastrar", async (req, res) => {
   try {
     const usuarios = await buscarUsuariosNoBanco();
     res.json(usuarios);
