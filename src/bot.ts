@@ -15,6 +15,7 @@ import adminRouter from "./routes/admin";
 import usuariosRouter from "./api/admin/usuarios";
 import path from "path";
 
+
 // 1. Variáveis de ambiente
 dotenv.config();
 
