@@ -4,6 +4,7 @@ import { salvarUsuario, listarSites, salvarStatusSiteUsuario, buscarUsuarioPorCh
 import { enviarCodigo } from '../utils/mail';
 import { Message } from 'node-telegram-bot-api';
 import termoAceitacao from '../termos/aceitacaoGeral';
+import { cadastrarNoColodeteLeiloes } from '../services/leilaoColodete';
 
 interface CadastroState {
   etapa: number;
@@ -163,49 +164,64 @@ export const HandlersCadastro = {
         await bot.sendMessage(chatId, 'Confirme sua senha:');
         break;
 
-      case 12:
-        if (text !== session.senha) {
-          await bot.sendMessage(chatId, 'Senhas não coincidem! Digite a senha novamente:');
-          session.etapa = 11;
-          return;
-        }
-        session.senhaConfirmacao = text;
+          case 12:
+      if (text !== session.senha) {
+        await bot.sendMessage(chatId, 'Senhas não coincidem! Digite a senha novamente:');
+        session.etapa = 11;
+        return;
+      }
+      session.senhaConfirmacao = text;
 
-        const usuarioExistente = await buscarUsuarioPorChatId(chatId);
-        if (usuarioExistente) {
-          await bot.sendMessage(chatId, 'Você já está cadastrado! Use /start para acessar o menu.');
-          userSessions.delete(chatId);
-          return;
-        }
-
-        const usuarioId = await salvarUsuario({
-          nome: session.nome!,
-          email: session.email!,
-          cpf: session.cpf!,
-          cnpj: session.cnpj,
-          senha: session.senha!,
-          endereco: session.endereco!,
-          chat_id: chatId,
-          imagem_doc_id: session.imagem_doc_id,
-          comprovante_residencia_id: session.comprovante_residencia_id
-        });
-
-        const usuarioSalvo = {
-          id: usuarioId,
-          nome: session.nome!,
-          email: session.email!,
-          cpf: session.cpf!,
-          endereco: session.endereco!,
-          chat_id: chatId
-        };
-
-        const sites = await listarSites();
-        for (const site of sites) {
-          await salvarStatusSiteUsuario(usuarioId, site.id, 'pendente');
-        }
+      const usuarioExistente = await buscarUsuarioPorChatId(chatId);
+      if (usuarioExistente) {
+        await bot.sendMessage(chatId, 'Você já está cadastrado! Use /start para acessar o menu.');
         userSessions.delete(chatId);
-        await bot.sendMessage(chatId, 'Cadastro concluído! Você será avaliado pelos sites de leilão e poderá acompanhar seu status pelo menu.', { reply_markup: { remove_keyboard: true } });
-        break;
+        return;
+      }
+
+      const usuarioId = await salvarUsuario({
+        nome: session.nome!,
+        email: session.email!,
+        cpf: session.cpf!,
+        cnpj: session.cnpj,
+        senha: session.senha!,
+        endereco: session.endereco!,
+        chat_id: chatId,
+        imagem_doc_id: session.imagem_doc_id,
+        comprovante_residencia_id: session.comprovante_residencia_id
+      });
+
+      const usuarioSalvo = {
+        id: usuarioId,
+        nome: session.nome!,
+        email: session.email!,
+        cpf: session.cpf!,
+        rg: "", // Se você tiver o RG, coloque aqui. Caso não, mantenha vazio ou ajuste o fluxo.
+        telefone: "", // Se você coletar telefone, coloque aqui. Ajuste conforme sua coleta.
+        senha: session.senha!, // Só use para automação, não guarde em texto plano!
+        endereco: session.endereco!,
+        chat_id: chatId
+      };
+
+      // INTEGRAÇÃO: Tenta cadastrar no Colodete Leilões usando Puppeteer
+      try {
+        await cadastrarNoColodeteLeiloes(usuarioSalvo);
+        await bot.sendMessage(chatId, "Seu cadastro também foi feito automaticamente no site Colodete Leilões! 🚀");
+      } catch (e) {
+        await bot.sendMessage(chatId, "Cadastro local feito, mas não conseguimos cadastrar automaticamente no Colodete Leilões. Você pode tentar manualmente pelo site ou procurar o suporte.");
+      }
+
+      const sites = await listarSites();
+      for (const site of sites) {
+        await salvarStatusSiteUsuario(usuarioId, site.id, 'pendente');
+      }
+      userSessions.delete(chatId);
+      await bot.sendMessage(
+        chatId,
+        'Cadastro concluído! Você será avaliado pelos sites de leilão e poderá acompanhar seu status pelo menu.',
+        { reply_markup: { remove_keyboard: true } }
+      );
+      break;
 
       default:
         await bot.sendMessage(chatId, 'Erro no cadastro. Digite /start para reiniciar.');

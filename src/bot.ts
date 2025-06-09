@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { atualizarStatusUsuarioNoBanco, buscarUsuariosNoBanco } from './db';
 import { HandlersCadastro } from './handlers/cadastro';
 import { HandlersLogin } from './handlers/login';
+import { loginSessions } from './handlers/login'; // certifique-se de importar
 import { HandlersStatus } from './handlers/status';
 import { HandlersAdicionais } from './handlers/adicionais';
 import { HandlersEditais } from './handlers/editais';
@@ -139,12 +140,19 @@ bot.on('callback_query', async (query) => {
   }
 });
 
-// Handler para todas as mensagens
 bot.on('message', async (msg) => {
   try {
     if (msg.text && msg.text.startsWith('/')) return;
     const chatId = msg.chat.id;
     const texto = msg.text?.trim();
+
+    // >>> ADICIONE ESTE BLOCO <<<
+    // Se o usuário está em fluxo de login, chama o handler de login!
+    const loginSession = loginSessions.get(chatId);
+    if (loginSession) {
+      await HandlersLogin.processarEtapa(msg, loginSession);
+      return;
+    }
 
     // Se o usuário está em fluxo de cadastro, chama o handler do cadastro!
     const session = userSessions.get(chatId);
